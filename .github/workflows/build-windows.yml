@@ -5,6 +5,16 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布到 Releases 的标签，例如 v2.1.1（留空则使用 tauri.conf.json 中的版本）"
+        required: false
+        type: string
+      draft:
+        description: "作为草稿发布（不勾选则直接公开）"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -15,12 +25,50 @@ concurrency:
 
 jobs:
   build:
-    name: Build Windows 10/11 installers
+    name: Build and publish Windows installers
     runs-on: windows-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # 统一计算本次发布使用的标签：
+      # - 推送 tag 时直接使用该 tag
+      # - 手动运行时使用输入的 tag，未填写则读取 tauri.conf.json 的版本
+      - name: Resolve release tag
+        id: release
+        shell: pwsh
+        run: |
+          $tag = "${{ inputs.tag }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            if ("${{ github.ref_type }}" -eq "tag") {
+              $tag = "${{ github.ref_name }}"
+            } else {
+              $config = Get-Content "src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json
+              $tag = "v$($config.version)"
+            }
+          }
+          if (-not $tag.StartsWith("v")) {
+            $tag = "v$tag"
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "发布标签：$tag"
+
+      # 手动运行时如果标签还不存在，则在当前提交上创建并推送标签。
+      # 使用 GITHUB_TOKEN 推送的标签不会再次触发本工作流。
+      - name: Ensure release tag exists
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.release.outputs.tag }}"
+          git fetch --tags --force
+          git rev-parse --verify --quiet "refs/tags/$tag" | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            git tag $tag
+            git push origin $tag
+            Write-Host "已创建标签 $tag"
+          } else {
+            Write-Host "标签 $tag 已存在，将更新该版本的发布资源"
+          }
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,32 +89,14 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # 手动触发（workflow_dispatch）时只构建，并把安装包作为 Actions 产物上传。
-      - name: Build installers
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        uses: tauri-apps/tauri-action@v0
-        with:
-          args: --target x86_64-pc-windows-msvc --bundles nsis,msi
-
-      - name: Upload installers as artifacts
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: keyviz-windows-x64
-          path: |
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-          if-no-files-found: error
-
-      # 推送形如 v2.1.1 的 tag 时，自动构建并创建 GitHub Release（草稿）。
-      - name: Build and create GitHub Release
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+      # 无论是推送标签还是手动运行，都会构建并直接发布到 GitHub Releases。
+      - name: Build and publish GitHub Release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "Keyviz ${{ github.ref_name }}"
+          tagName: ${{ steps.release.outputs.tag }}
+          releaseName: "Keyviz ${{ steps.release.outputs.tag }}"
           releaseBody: |
             适用于 Windows 10 / 11（64 位）的安装包。
 
@@ -74,6 +104,6 @@ jobs:
             - `.exe`：NSIS 安装包（双击即可安装）
 
             安装程序会自动检测并安装 WebView2 运行时。
-          releaseDraft: true
+          releaseDraft: ${{ inputs.draft || false }}
           prerelease: false
           args: --target x86_64-pc-windows-msvc --bundles nsis,msi

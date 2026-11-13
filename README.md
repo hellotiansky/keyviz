@@ -79,8 +79,10 @@ Keyviz 兼容使用 X11 协议的 Linux。目前可以按照下方的构建说�
 
 仓库内的 [`.github/workflows/build-windows.yml`](.github/workflows/build-windows.yml) 会在 GitHub Actions 中自动构建适用于 **Windows 10 / 11（64 位）** 的安装包：
 
-- **手动触发**：进入 `Actions > Build Windows Release > Run workflow`，构建完成后可在本次运行的 Artifacts 中下载 `.msi` 和 `.exe` 安装包。
-- **发布版本**：推送形如 `v2.1.1` 的标签（tag），工作流会自动构建并创建 GitHub Release 草稿，确认无误后发布即可。发布后会同时触发 Winget 发布工作流。
+- **手动触发**：进入 `Actions > Build Windows Release > Run workflow`，可填写要发布的标签（留空则使用 `src-tauri/tauri.conf.json` 中的版本）。构建完成后会**直接发布到 GitHub Releases**，无需再从 Actions 的 Artifacts 中下载。
+- **推送标签**：推送形如 `v2.1.1` 的标签（tag），工作流会自动构建并发布对应的 GitHub Release。
+- **草稿选项**：手动触发时可以勾选“作为草稿发布”，确认无误后再手动公开；默认直接公开。
+- 对同一个标签重复运行，会更新该 Release 中的安装包资源。
 
 安装包包含 `.msi`（Windows Installer）和 `.exe`（NSIS）两种格式。安装程序会自动检测并安装 WebView2 运行时，因此可以在未预装 WebView2 的 Windows 10 系统上正常使用。
 
