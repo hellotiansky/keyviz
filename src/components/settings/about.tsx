@@ -27,16 +27,16 @@ export const AboutPage = () => {
             if (latestVersion !== VERSION) {
                 setUpdateAvailable(true);
                 toast.success(
-                    `New version available: v${latestVersion}`,
+                    `发现新版本：v${latestVersion}`,
                     {
-                        action: { label: 'View', onClick: visitReleasePage }
+                        action: { label: '查看', onClick: visitReleasePage }
                     }
                 );
             } else {
-                toast.info("You are using the latest version.");
+                toast.info("当前已是最新版本。");
             }
         } catch (error) {
-            toast.error("Failed to check for updates.");
+            toast.error("检查更新失败。");
         }
         setChecking(false);
     }
@@ -105,10 +105,10 @@ export const AboutPage = () => {
                 >
                     <ItemContent>
                         <ItemTitle>
-                            <HugeiconsIcon icon={SparklesIcon} size="1em" /> Upgrade to Pro
+                            <HugeiconsIcon icon={SparklesIcon} size="1em" /> 升级到 Pro
                         </ItemTitle>
                         <ItemDescription>
-                            Love Keyviz? Support its growth and unlock more with Pro.
+                            喜欢 Keyviz？支持它继续成长，并通过 Pro 解锁更多功能。
                         </ItemDescription>
                     </ItemContent>
                     <ItemActions>
@@ -116,7 +116,7 @@ export const AboutPage = () => {
                             variant={hovered ? "default" : "outline"}
                             onClick={() => openUrl('https://keyviz.org/pro')}
                         >
-                            Go Pro
+                            前往 Pro
                         </Button>
                     </ItemActions>
                 </Item>
@@ -125,14 +125,14 @@ export const AboutPage = () => {
             <Item variant="muted" className="transition-all peer-hover:blur-xs">
                 <ItemContent>
                     <ItemTitle>
-                        <HugeiconsIcon icon={StarsIcon} size="1em" /> Check for updates
+                        <HugeiconsIcon icon={StarsIcon} size="1em" /> 检查更新
                     </ItemTitle>
                 </ItemContent>
                 <ItemActions>
                     {
                         updateAvailable
-                            ? <Button className="cursor-pointer" onClick={visitReleasePage}>Update Available</Button>
-                            : <Button variant="outline" onClick={checkForUpdates} disabled={checking}>Check</Button>
+                            ? <Button className="cursor-pointer" onClick={visitReleasePage}>有可用更新</Button>
+                            : <Button variant="outline" onClick={checkForUpdates} disabled={checking}>检查</Button>
                     }
                 </ItemActions>
             </Item>
@@ -140,10 +140,10 @@ export const AboutPage = () => {
             <Item variant="muted" className="transition-all peer-hover:blur-xs">
                 <ItemContent>
                     <ItemTitle>
-                        <HugeiconsIcon icon={GithubIcon} size="1em" /> Open Source
+                        <HugeiconsIcon icon={GithubIcon} size="1em" /> 开源
                     </ItemTitle>
                     <ItemDescription className="max-w-100">
-                        Review the source code on GitHub, sponsor, star the project, or contribute to its development.
+                        在 GitHub 上查看源代码、赞助或收藏本项目，也可以参与开发。
                     </ItemDescription>
                 </ItemContent>
                 <ItemActions>
@@ -159,7 +159,7 @@ export const AboutPage = () => {
                         <HugeiconsIcon icon={DiscordIcon} size="1em" /> Discord
                     </ItemTitle>
                     <ItemDescription className="max-w-100">
-                        Join our Discord community.
+                        加入我们的 Discord 社区。
                     </ItemDescription>
                 </ItemContent>
                 <ItemActions>

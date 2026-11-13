@@ -12,6 +12,18 @@ interface AlignmentSelectorProps {
     iconStrokeWidth?: number;
 }
 
+const alignmentLabels: Record<Alignment, string> = {
+    'top-left': '左上',
+    'top-center': '中上',
+    'top-right': '右上',
+    'center-left': '左中',
+    'center': '居中',
+    'center-right': '右中',
+    'bottom-left': '左下',
+    'bottom-center': '中下',
+    'bottom-right': '右下',
+};
+
 const AlignmentSelector: React.FC<AlignmentSelectorProps> = ({ value, onChange, className, disabledOptions = [], iconStrokeWidth = 2 }) => {
 
     const items = [
@@ -36,8 +48,8 @@ const AlignmentSelector: React.FC<AlignmentSelectorProps> = ({ value, onChange, 
                             <button
                                 key={pos}
                                 onClick={() => onChange(pos)}
-                                title={pos.replace('-', ' ')} // Tooltip on hover
-                                aria-label={`Align ${pos}`}
+                                title={alignmentLabels[pos]} // 悬停提示
+                                aria-label={alignmentLabels[pos]}
                                 aria-pressed={isSelected}
                                 className={`
                   relative rounded-md transition-all duration-200 ease-in-out

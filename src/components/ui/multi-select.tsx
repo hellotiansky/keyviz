@@ -48,7 +48,7 @@ const MultiSelect = React.forwardRef<
       options,
       onValueChange,
       defaultValue = [],
-      placeholder = 'Select options',
+      placeholder = '选择选项',
       animation = 0,
       maxCount = 3,
       modalPopover = false,
@@ -203,11 +203,11 @@ const MultiSelect = React.forwardRef<
         >
           <Command>
             <CommandInput
-              placeholder='Search...'
+              placeholder='搜索…'
               onKeyDown={handleInputKeyDown}
             />
             <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandEmpty>未找到结果。</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   key='all'

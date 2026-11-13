@@ -100,7 +100,7 @@ export function NumberScrubber({
             props.disabled && "pointer-events-none"
           )}
           onMouseDown={handleMouseDown}
-          title="Click and drag to scrub"
+          title="按住并拖动以调整"
         >
           {icon}
         </div>

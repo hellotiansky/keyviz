@@ -19,6 +19,18 @@
     },
     "bundle": {
         "windows": {
+            "webviewInstallMode": {
+                "type": "downloadBootstrapper",
+                "silent": true
+            },
+            "nsis": {
+                "installMode": "currentUser",
+                "languages": [
+                    "SimpChinese",
+                    "English"
+                ],
+                "displayLanguageSelector": false
+            },
             "wix": {
                 "dialogImagePath": "./wix/dialog-image.png",
                 "bannerPath": "./wix/banner.png"

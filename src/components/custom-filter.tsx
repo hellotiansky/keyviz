@@ -310,9 +310,9 @@ export const CustomFilter = () => {
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'Keyboard' | 'Mouse' | 'Numpad')}
         >
-          <ToggleGroupItem value="Keyboard">Keyboard</ToggleGroupItem>
-          <ToggleGroupItem value="Mouse">Mouse</ToggleGroupItem>
-          <ToggleGroupItem value="Numpad">Numpad</ToggleGroupItem>
+          <ToggleGroupItem value="Keyboard">键盘</ToggleGroupItem>
+          <ToggleGroupItem value="Mouse">鼠标</ToggleGroupItem>
+          <ToggleGroupItem value="Numpad">小键盘</ToggleGroupItem>
         </ToggleGroup>
       </div>
     </KeyboardContext.Provider>
