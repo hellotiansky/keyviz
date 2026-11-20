@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <hidusage.h>
 #include "keyviz/input_event.h"
+#include "keyviz/event_engine.h"
 #include "keyviz/renderer.h"
 
 #include <deque>
@@ -17,35 +18,6 @@ constexpr int kOverlayWidth = 580;
 constexpr int kOverlayHeight = 156;
 constexpr int kSettingsButtonId = 100;
 constexpr int kSettingsHotkeyId = 1;
-
-class HistoryStore {
-public:
-    void append(InputEvent event) {
-        events_.push_front(std::move(event));
-        if (events_.size() > kMaxHistory) events_.pop_back();
-    }
-    const std::deque<InputEvent>& events() const noexcept { return events_; }
-private:
-    std::deque<InputEvent> events_;
-};
-
-class FilterEngine {
-public:
-    bool allow(const InputEvent& event) const noexcept { return !event.label.empty(); }
-};
-
-class EventEngine {
-public:
-    void process(InputEvent event) {
-        if (!filter_.allow(event)) return;
-        event.timestamp = GetTickCount();
-        history_.append(std::move(event));
-    }
-    const HistoryStore& history() const noexcept { return history_; }
-private:
-    FilterEngine filter_;
-    HistoryStore history_;
-};
 
 class InputCore {
 public:
