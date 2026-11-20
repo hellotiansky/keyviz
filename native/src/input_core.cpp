@@ -5,6 +5,10 @@
 
 namespace keyviz {
 
+POINT InputCore::lastMousePoint_{};
+bool InputCore::haveMousePoint_ = false;
+DWORD InputCore::lastMouseMoveTick_ = 0;
+
 bool InputCore::start(HWND target) noexcept {
     RAWINPUTDEVICE devices[2]{};
     devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
@@ -16,6 +20,10 @@ bool InputCore::start(HWND target) noexcept {
     devices[1].dwFlags = RIDEV_INPUTSINK;
     devices[1].hwndTarget = target;
     registered_ = RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE)) == TRUE;
+    if (registered_) {
+        haveMousePoint_ = false;
+        lastMouseMoveTick_ = 0;
+    }
     return registered_;
 }
 
@@ -76,6 +84,30 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
     if (flags & RI_MOUSE_HWHEEL) {
         const SHORT delta = static_cast<SHORT>(mouse.usButtonData);
         events.push_back({InputEvent::Type::Wheel, delta > 0 ? L"Wheel Right" : L"Wheel Left", 0});
+    }
+
+    // Raw Input movement is relative or device-absolute. GetCursorPos gives
+    // the unified virtual-desktop position and therefore works across monitors.
+    if ((mouse.usFlags & MOUSE_MOVE_ABSOLUTE) || mouse.lLastX != 0 || mouse.lLastY != 0) {
+        POINT point{};
+        if (GetCursorPos(&point)) {
+            const DWORD now = GetTickCount();
+            const bool changed = !haveMousePoint_ ||
+                point.x != lastMousePoint_.x || point.y != lastMousePoint_.y;
+            // Coalesce high-rate devices to ~30 updates/sec so movement does
+            // not evict useful key/button events from the bounded history.
+            if (changed && (!haveMousePoint_ || now - lastMouseMoveTick_ >= 33)) {
+                InputEvent move{};
+                move.type = InputEvent::Type::MouseMove;
+                move.label = L"Pointer";
+                move.screenX = point.x;
+                move.screenY = point.y;
+                events.push_back(std::move(move));
+                lastMousePoint_ = point;
+                haveMousePoint_ = true;
+                lastMouseMoveTick_ = now;
+            }
+        }
     }
     return events;
 }
