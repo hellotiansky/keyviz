@@ -1,10 +1,7 @@
 #pragma once
-
 #include <windows.h>
 #include <string>
-
 namespace keyviz {
-
 struct InputEvent {
     enum class Type { KeyDown, KeyUp, MouseDown, MouseUp, Wheel, MouseMove };
     Type type{};
@@ -12,6 +9,8 @@ struct InputEvent {
     DWORD timestamp{};
     LONG screenX{};
     LONG screenY{};
+    USHORT virtualKey{};
+    unsigned repeatCount{1};
+    bool isRepeat{false};
 };
-
 } // namespace keyviz
