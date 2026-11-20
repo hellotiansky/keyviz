@@ -60,16 +60,17 @@ bool Renderer::createDeviceResources() noexcept {
 
     hr = target_->CreateSolidColorBrush(
         D2D1::ColorF(0.075f, 0.090f, 0.115f, 0.96f), &panelBrush_);
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) { discardDeviceResources(); return false; }
     hr = target_->CreateSolidColorBrush(
         D2D1::ColorF(0.28f, 0.66f, 1.0f, 1.0f), &accentBrush_);
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) { discardDeviceResources(); return false; }
     hr = target_->CreateSolidColorBrush(
         D2D1::ColorF(0.96f, 0.97f, 0.99f, 1.0f), &textBrush_);
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) { discardDeviceResources(); return false; }
     hr = target_->CreateSolidColorBrush(
         D2D1::ColorF(0.67f, 0.72f, 0.79f, 1.0f), &secondaryBrush_);
-    return SUCCEEDED(hr);
+    if (FAILED(hr)) { discardDeviceResources(); return false; }
+    return true;
 }
 
 void Renderer::resize(UINT width, UINT height) noexcept {
@@ -98,28 +99,42 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
     if (!history.empty()) {
         const DWORD age = now - history.front().timestamp;
         constexpr DWORD fadeDuration = 1100;
-        if (age < fadeDuration) {
-            opacity = std::clamp(1.0f - static_cast<float>(age) /
-                static_cast<float>(fadeDuration), 0.0f, 1.0f);
-        } else {
-            opacity = 0.28f;
-        }
+        opacity = age < fadeDuration
+            ? std::clamp(1.0f - static_cast<float>(age) /
+                static_cast<float>(fadeDuration), 0.0f, 1.0f)
+            : 0.28f;
     }
 
     textBrush_->SetOpacity(opacity);
     accentBrush_->SetOpacity(opacity);
-    const std::wstring headline = history.empty()
-        ? L"Waiting for keyboard or mouse input..."
-        : history.front().label;
+    const InputEvent* latestMeaningful = nullptr;
+    const InputEvent* latestPointer = nullptr;
+    for (const auto& event : history) {
+        if (!latestPointer && event.type == InputEvent::Type::MouseMove)
+            latestPointer = &event;
+        if (event.type != InputEvent::Type::MouseMove &&
+            event.type != InputEvent::Type::KeyUp &&
+            event.type != InputEvent::Type::MouseUp) {
+            latestMeaningful = &event;
+            break;
+        }
+    }
+    const std::wstring headline = latestMeaningful
+        ? latestMeaningful->label
+        : (latestPointer ? L"Mouse movement" : L"Waiting for keyboard or mouse input...");
     target_->DrawText(headline.c_str(),
         static_cast<UINT32>(headline.size()), titleFormat_.Get(),
         D2D1::RectF(22.0f, 13.0f, size.width - 20.0f, 57.0f),
         textBrush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
 
     secondaryBrush_->SetOpacity(0.92f);
-    constexpr wchar_t hint[] = L"Ctrl + Shift + K   |   Native settings";
-    target_->DrawText(hint, static_cast<UINT32>(std::size(hint) - 1),
-        bodyFormat_.Get(),
+    std::wstring pointerText = L"Ctrl + Shift + K   |   Native settings";
+    if (latestPointer) {
+        pointerText = L"POINTER   X " + std::to_wstring(latestPointer->screenX) +
+            L"   Y " + std::to_wstring(latestPointer->screenY);
+    }
+    target_->DrawText(pointerText.c_str(),
+        static_cast<UINT32>(pointerText.size()), bodyFormat_.Get(),
         D2D1::RectF(22.0f, 69.0f, size.width - 20.0f, 94.0f),
         secondaryBrush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
 
@@ -137,6 +152,16 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
         static_cast<UINT32>(recent.size()), bodyFormat_.Get(),
         D2D1::RectF(22.0f, 111.0f, size.width - 20.0f, 140.0f),
         secondaryBrush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
+
+    // A compact pointer glyph reinforces that movement capture is active.
+    if (latestPointer) {
+        const float cx = size.width - 34.0f;
+        const float cy = 82.0f;
+        target_->DrawEllipse(D2D1::Ellipse(D2D1::Point2F(cx, cy), 7.0f, 7.0f),
+            accentBrush_.Get(), 2.0f);
+        target_->FillEllipse(D2D1::Ellipse(D2D1::Point2F(cx, cy), 2.0f, 2.0f),
+            accentBrush_.Get());
+    }
 
     const HRESULT hr = target_->EndDraw();
     if (hr == D2DERR_RECREATE_TARGET) discardDeviceResources();
