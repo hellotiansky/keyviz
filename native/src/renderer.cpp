@@ -119,9 +119,11 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
             break;
         }
     }
-    const std::wstring headline = latestMeaningful
+    std::wstring headline = latestMeaningful
         ? latestMeaningful->label
         : (latestPointer ? L"Mouse movement" : L"Waiting for keyboard or mouse input...");
+    if (latestMeaningful && latestMeaningful->repeatCount > 1)
+        headline += L"  ×" + std::to_wstring(latestMeaningful->repeatCount);
     target_->DrawText(headline.c_str(),
         static_cast<UINT32>(headline.size()), titleFormat_.Get(),
         D2D1::RectF(22.0f, 13.0f, size.width - 20.0f, 57.0f),
@@ -146,6 +148,8 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
             event.type != InputEvent::Type::Wheel) continue;
         if (count) recent += L"    /    ";
         recent += event.label;
+        if (event.repeatCount > 1)
+            recent += L" ×" + std::to_wstring(event.repeatCount);
         if (++count == 5) break;
     }
     target_->DrawText(recent.c_str(),
