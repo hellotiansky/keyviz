@@ -22,8 +22,9 @@ Output: `build/native/Release/KeyvizNative.exe`.
 ## Current implementation
 - C++20 Win32 GUI application and per-monitor DPI awareness V2 request
 - Transparent, topmost, click-through overlay
-- Background keyboard and mouse Raw Input
-- Initial keyboard, mouse button and wheel event normalization
+- Background keyboard and mouse Raw Input in a dedicated `InputCore` module
+- Normalized key press/release, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
+- Compound mouse-button packets expanded into individual events
 - Extracted `InputEvent`, `FilterEngine`, `HistoryStore` and `EventEngine` modules
 - Bounded in-memory event history
 - Native Win32 settings window; Ctrl+Shift+K shortcut
@@ -39,9 +40,8 @@ Output: `build/native/Release/KeyvizNative.exe`.
 
 ## Next milestones
 1. Verify the Actions build and runtime behavior on Windows 10 x64.
-2. Extract Raw Input capture into its own module and harden key/button normalization.
-3. Add per-monitor overlay windows, DPI-aware placement and monitor hot-plug handling.
-4. Implement configurable animation, filters, history browsing and persisted settings.
-5. Complete native settings, tray integration and installer packaging.
+2. Add per-monitor overlay windows, DPI-aware placement and monitor hot-plug handling.
+3. Implement configurable animation, filters, history browsing and persisted settings.
+4. Complete native settings, tray integration and installer packaging.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
