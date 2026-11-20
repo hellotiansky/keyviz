@@ -40,6 +40,27 @@ USHORT InputCore::normalizedVirtualKey(const RAWKEYBOARD& key) noexcept {
     if (key.VKey == VK_MENU) return extended ? VK_RMENU : VK_LMENU;
     return key.VKey;
 }
+bool InputCore::isModifierKey(USHORT vk) noexcept {
+    return vk == VK_LCONTROL || vk == VK_RCONTROL ||
+        vk == VK_LSHIFT || vk == VK_RSHIFT ||
+        vk == VK_LMENU || vk == VK_RMENU ||
+        vk == VK_LWIN || vk == VK_RWIN;
+}
+std::wstring InputCore::chordName(USHORT vk, const std::wstring& keyLabel) {
+    if (isModifierKey(vk)) return keyLabel;
+    std::wstring chord;
+    const auto add = [&chord](const wchar_t* name) {
+        if (!chord.empty()) chord += L" + ";
+        chord += name;
+    };
+    if (pressedKeys_[VK_LCONTROL] || pressedKeys_[VK_RCONTROL]) add(L"Ctrl");
+    if (pressedKeys_[VK_LSHIFT] || pressedKeys_[VK_RSHIFT]) add(L"Shift");
+    if (pressedKeys_[VK_LMENU] || pressedKeys_[VK_RMENU]) add(L"Alt");
+    if (pressedKeys_[VK_LWIN] || pressedKeys_[VK_RWIN]) add(L"Win");
+    if (!chord.empty()) chord += L" + ";
+    chord += keyLabel;
+    return chord;
+}
 std::wstring InputCore::keyName(const RAWKEYBOARD& key) {
     const USHORT vk = normalizedVirtualKey(key);
     switch (vk) {
@@ -67,7 +88,11 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
         pressedKeys_[vk] = !keyUp;
         InputEvent event{};
         event.type = keyUp ? InputEvent::Type::KeyUp : InputEvent::Type::KeyDown;
-        event.label = keyName(key); event.virtualKey = vk; event.isRepeat = repeat;
+        event.label = keyName(key);
+        event.virtualKey = vk;
+        event.isRepeat = repeat;
+        if (!keyUp && !event.label.empty())
+            event.chordLabel = chordName(vk, event.label);
         if (!event.label.empty()) events.push_back(std::move(event));
         return events;
     }
