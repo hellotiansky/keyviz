@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,7 +26,10 @@ constexpr UINT_PTR kRedrawTimerId = 2;
 
 class SettingsWindow {
 public:
-    bool create(HINSTANCE instance) {
+    bool create(HINSTANCE instance, const FilterSettings& initial,
+        std::function<void(const FilterSettings&)> onApply) {
+        settings_ = initial;
+        onApply_ = std::move(onApply);
         WNDCLASSEXW wc{sizeof(wc)};
         wc.lpfnWndProc = &SettingsWindow::windowProc;
         wc.hInstance = instance;
@@ -37,7 +41,7 @@ public:
         hwnd_ = CreateWindowExW(WS_EX_APPWINDOW, kSettingsClass,
             L"Keyviz Native - Settings",
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-            CW_USEDEFAULT, CW_USEDEFAULT, 460, 260,
+            CW_USEDEFAULT, CW_USEDEFAULT, 460, 300,
             nullptr, nullptr, instance, this);
         return hwnd_ != nullptr;
     }
@@ -47,31 +51,69 @@ public:
         SetForegroundWindow(hwnd_);
     }
 private:
+    enum : int {
+        kKeyboardFilterId = 201, kMouseButtonsFilterId = 202,
+        kWheelFilterId = 203, kMouseMoveFilterId = 204,
+        kApplyId = 205, kHideId = 206
+    };
+
+    static void createCheckBox(HWND hwnd, HINSTANCE instance,
+        const wchar_t* label, int id, int y, bool checked) {
+        HWND control = CreateWindowExW(0, L"BUTTON", label,
+            WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+            22, y, 380, 25, hwnd,
+            reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),
+            instance, nullptr);
+        SendMessageW(control, BM_SETCHECK,
+            checked ? BST_CHECKED : BST_UNCHECKED, 0);
+    }
+
     static LRESULT CALLBACK windowProc(HWND hwnd, UINT message,
         WPARAM wParam, LPARAM lParam) {
-        if (message == WM_CREATE) {
+        auto* self = reinterpret_cast<SettingsWindow*>(
+            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        if (message == WM_NCCREATE) {
+            const auto* create = reinterpret_cast<CREATESTRUCTW*>(lParam);
+            self = static_cast<SettingsWindow*>(create->lpCreateParams);
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA,
+                reinterpret_cast<LONG_PTR>(self));
+        }
+        if (!self) return DefWindowProcW(hwnd, message, wParam, lParam);
+        switch (message) {
+        case WM_CREATE: {
             const HINSTANCE instance = GetModuleHandleW(nullptr);
-            CreateWindowExW(0, L"STATIC",
-                L"Keyviz Native settings (initial scaffold)",
-                WS_CHILD | WS_VISIBLE, 20, 20, 400, 24,
+            CreateWindowExW(0, L"STATIC", L"Choose which input events appear in the overlay:",
+                WS_CHILD | WS_VISIBLE, 20, 18, 410, 22,
                 hwnd, nullptr, instance, nullptr);
-            CreateWindowExW(0, L"STATIC",
-                L"Input: Raw Input | Renderer: Direct2D + DirectWrite",
-                WS_CHILD | WS_VISIBLE, 20, 58, 400, 24,
-                hwnd, nullptr, instance, nullptr);
-            CreateWindowExW(0, L"STATIC",
-                L"Shortcut: Ctrl + Shift + K",
-                WS_CHILD | WS_VISIBLE, 20, 96, 400, 24,
-                hwnd, nullptr, instance, nullptr);
+            createCheckBox(hwnd, instance, L"Keyboard", kKeyboardFilterId, 52,
+                self->settings_.keyboard);
+            createCheckBox(hwnd, instance, L"Mouse buttons", kMouseButtonsFilterId, 82,
+                self->settings_.mouseButtons);
+            createCheckBox(hwnd, instance, L"Mouse wheel", kWheelFilterId, 112,
+                self->settings_.mouseWheel);
+            createCheckBox(hwnd, instance, L"Mouse movement", kMouseMoveFilterId, 142,
+                self->settings_.mouseMove);
+            CreateWindowExW(0, L"BUTTON", L"Apply",
+                WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 22, 195, 100, 30,
+                hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kApplyId)),
+                instance, nullptr);
             CreateWindowExW(0, L"BUTTON", L"Hide",
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 20, 150, 100, 30,
-                hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kSettingsButtonId)),
+                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 134, 195, 100, 30,
+                hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kHideId)),
                 instance, nullptr);
             return 0;
         }
-        switch (message) {
         case WM_COMMAND:
-            if (LOWORD(wParam) == kSettingsButtonId) ShowWindow(hwnd, SW_HIDE);
+            if (LOWORD(wParam) == kApplyId) {
+                FilterSettings next;
+                next.keyboard = IsDlgButtonChecked(hwnd, kKeyboardFilterId) == BST_CHECKED;
+                next.mouseButtons = IsDlgButtonChecked(hwnd, kMouseButtonsFilterId) == BST_CHECKED;
+                next.mouseWheel = IsDlgButtonChecked(hwnd, kWheelFilterId) == BST_CHECKED;
+                next.mouseMove = IsDlgButtonChecked(hwnd, kMouseMoveFilterId) == BST_CHECKED;
+                if (self->onApply_) self->onApply_(next);
+                return 0;
+            }
+            if (LOWORD(wParam) == kHideId) ShowWindow(hwnd, SW_HIDE);
             return 0;
         case WM_CLOSE:
             ShowWindow(hwnd, SW_HIDE);
@@ -79,7 +121,10 @@ private:
         }
         return DefWindowProcW(hwnd, message, wParam, lParam);
     }
+
     HWND hwnd_{};
+    FilterSettings settings_{};
+    std::function<void(const FilterSettings&)> onApply_;
 };
 
 struct OverlayWindow {
@@ -93,7 +138,8 @@ public:
 
     bool initialize() {
         if (!registerWindowClasses()) return false;
-        engine_.setFilterSettings(settingsStore_.load());
+        const auto initialFilters = settingsStore_.load();
+        engine_.setFilterSettings(initialFilters);
 
         // A single hidden top-level window owns Raw Input and the global hotkey.
         // Overlay windows are presentation-only and never register input devices.
@@ -114,7 +160,14 @@ public:
                 kAppName, MB_ICONERROR | MB_OK);
             return false;
         }
-        if (!settings_.create(instance_)) return false;
+        if (!settings_.create(instance_, initialFilters, [this](const FilterSettings& filters) {
+                if (settingsStore_.save(filters)) {
+                    engine_.setFilterSettings(filters);
+                } else {
+                    MessageBoxW(inputWindow_, L"Could not save settings.",
+                        kAppName, MB_ICONWARNING | MB_OK);
+                }
+            })) return false;
         if (!RegisterHotKey(inputWindow_, kSettingsHotkeyId,
                 MOD_CONTROL | MOD_SHIFT, 'K')) {
             MessageBoxW(nullptr, L"Ctrl+Shift+K could not be registered.",
