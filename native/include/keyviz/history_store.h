@@ -14,6 +14,14 @@ public:
 
     void append(InputEvent event) {
         if (capacity_ == 0) return;
+        // Keep only the newest consecutive pointer sample. This prevents a
+        // high-polling mouse from evicting keyboard/button history.
+        if (event.type == InputEvent::Type::MouseMove &&
+            !events_.empty() &&
+            events_.front().type == InputEvent::Type::MouseMove) {
+            events_.front() = std::move(event);
+            return;
+        }
         events_.push_front(std::move(event));
         if (events_.size() > capacity_) events_.pop_back();
     }
