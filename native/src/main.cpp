@@ -1,11 +1,10 @@
 #include <windows.h>
-#include <hidusage.h>
+#include "keyviz/input_core.h"
 #include "keyviz/input_event.h"
 #include "keyviz/event_engine.h"
 #include "keyviz/renderer.h"
 
 #include <deque>
-#include <iterator>
 #include <string>
 #include <utility>
 
@@ -18,57 +17,6 @@ constexpr int kOverlayWidth = 580;
 constexpr int kOverlayHeight = 156;
 constexpr int kSettingsButtonId = 100;
 constexpr int kSettingsHotkeyId = 1;
-
-class InputCore {
-public:
-    bool start(HWND target) {
-        RAWINPUTDEVICE devices[2]{};
-        devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-        devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-        devices[0].dwFlags = RIDEV_INPUTSINK;
-        devices[0].hwndTarget = target;
-        devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
-        devices[1].usUsage = HID_USAGE_GENERIC_MOUSE;
-        devices[1].dwFlags = RIDEV_INPUTSINK;
-        devices[1].hwndTarget = target;
-        registered_ = RegisterRawInputDevices(
-            devices, static_cast<UINT>(std::size(devices)),
-            sizeof(RAWINPUTDEVICE)) == TRUE;
-        return registered_;
-    }
-
-    void stop() noexcept {
-        if (!registered_) return;
-        RAWINPUTDEVICE devices[2]{};
-        devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-        devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-        devices[0].dwFlags = RIDEV_REMOVE;
-        devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
-        devices[1].usUsage = HID_USAGE_GENERIC_MOUSE;
-        devices[1].dwFlags = RIDEV_REMOVE;
-        RegisterRawInputDevices(devices,
-            static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE));
-        registered_ = false;
-    }
-
-    static bool read(HRAWINPUT handle, RAWINPUT& raw) noexcept {
-        UINT size = sizeof(raw);
-        return GetRawInputData(handle, RID_INPUT, &raw, &size,
-            sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1);
-    }
-
-    static std::wstring keyName(const RAWKEYBOARD& key) {
-        if (key.VKey == 255) return {};
-        const LONG keyData = static_cast<LONG>(
-            (key.MakeCode << 16) | ((key.Flags & RI_KEY_E0) ? (1L << 24) : 0));
-        wchar_t name[128]{};
-        if (GetKeyNameTextW(keyData, name,
-                static_cast<int>(std::size(name))) > 0) return name;
-        return L"Key " + std::to_wstring(key.VKey);
-    }
-private:
-    bool registered_{false};
-};
 
 class SettingsWindow {
 public:
@@ -190,42 +138,9 @@ private:
     void handleRawInput(HRAWINPUT handle) {
         RAWINPUT raw{};
         if (!InputCore::read(handle, raw)) return;
-        InputEvent event{};
-
-        if (raw.header.dwType == RIM_TYPEKEYBOARD) {
-            const RAWKEYBOARD& key = raw.data.keyboard;
-            event.type = (key.Flags & RI_KEY_BREAK)
-                ? InputEvent::Type::KeyUp : InputEvent::Type::KeyDown;
-            event.label = InputCore::keyName(key);
-        } else if (raw.header.dwType == RIM_TYPEMOUSE) {
-            const USHORT flags = raw.data.mouse.usButtonFlags;
-            if (flags & RI_MOUSE_WHEEL) {
-                event.type = InputEvent::Type::Wheel;
-                const SHORT delta = static_cast<SHORT>(raw.data.mouse.usButtonData);
-                event.label = delta > 0 ? L"Wheel Up" : L"Wheel Down";
-            } else if (flags & RI_MOUSE_LEFT_BUTTON_DOWN) {
-                event.type = InputEvent::Type::MouseDown;
-                event.label = L"Left Click";
-            } else if (flags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
-                event.type = InputEvent::Type::MouseDown;
-                event.label = L"Right Click";
-            } else if (flags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
-                event.type = InputEvent::Type::MouseDown;
-                event.label = L"Middle Click";
-            } else if (flags & (RI_MOUSE_LEFT_BUTTON_UP |
-                                RI_MOUSE_RIGHT_BUTTON_UP |
-                                RI_MOUSE_MIDDLE_BUTTON_UP)) {
-                event.type = InputEvent::Type::MouseUp;
-                event.label = L"Mouse Release";
-            } else {
-                // Mouse movement is coalesced/ignored in Stage 1.
-                return;
-            }
-        } else {
-            return;
-        }
-
-        engine_.process(std::move(event));
+        auto events = InputCore::decode(raw);
+        if (events.empty()) return;
+        for (auto& event : events) engine_.process(std::move(event));
         SetTimer(overlay_, 2, 16, nullptr);
         InvalidateRect(overlay_, nullptr, FALSE);
     }
