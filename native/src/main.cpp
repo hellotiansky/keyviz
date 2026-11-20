@@ -27,9 +27,11 @@ constexpr UINT_PTR kRedrawTimerId = 2;
 class SettingsWindow {
 public:
     bool create(HINSTANCE instance, const FilterSettings& initial,
-        std::function<void(const FilterSettings&)> onApply) {
+        std::function<void(const FilterSettings&)> onApply,
+        std::function<void()> onClearHistory) {
         settings_ = initial;
         onApply_ = std::move(onApply);
+        onClearHistory_ = std::move(onClearHistory);
         WNDCLASSEXW wc{sizeof(wc)};
         wc.lpfnWndProc = &SettingsWindow::windowProc;
         wc.hInstance = instance;
@@ -54,7 +56,7 @@ private:
     enum : int {
         kKeyboardFilterId = 201, kMouseButtonsFilterId = 202,
         kWheelFilterId = 203, kMouseMoveFilterId = 204,
-        kApplyId = 205, kHideId = 206
+        kApplyId = 205, kHideId = 206, kClearHistoryId = 207
     };
 
     static void createCheckBox(HWND hwnd, HINSTANCE instance,
@@ -113,7 +115,7 @@ private:
                 if (self->onApply_) self->onApply_(next);
                 return 0;
             }
-            if (LOWORD(wParam) == kHideId) ShowWindow(hwnd, SW_HIDE);
+            if (LOWORD(wParam) == kClearHistoryId) {\n                if (self->onClearHistory_) self->onClearHistory_();\n                return 0;\n            }\n            if (LOWORD(wParam) == kHideId) ShowWindow(hwnd, SW_HIDE);
             return 0;
         case WM_CLOSE:
             ShowWindow(hwnd, SW_HIDE);
@@ -124,7 +126,7 @@ private:
 
     HWND hwnd_{};
     FilterSettings settings_{};
-    std::function<void(const FilterSettings&)> onApply_;
+    std::function<void(const FilterSettings&)> onApply_;\n    std::function<void()> onClearHistory_;
 };
 
 struct OverlayWindow {
@@ -167,7 +169,7 @@ public:
                     MessageBoxW(inputWindow_, L"Could not save settings.",
                         kAppName, MB_ICONWARNING | MB_OK);
                 }
-            })) return false;
+            }, [this]() {\n                engine_.clearHistory();\n                KillTimer(inputWindow_, kRedrawTimerId);\n                invalidateOverlays();\n            })) return false;
         if (!RegisterHotKey(inputWindow_, kSettingsHotkeyId,
                 MOD_CONTROL | MOD_SHIFT, 'K')) {
             MessageBoxW(nullptr, L"Ctrl+Shift+K could not be registered.",
