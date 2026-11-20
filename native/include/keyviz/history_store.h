@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <deque>
+#include <utility>
 
 namespace keyviz {
 
