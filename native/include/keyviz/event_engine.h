@@ -8,6 +8,12 @@ namespace keyviz {
 class EventEngine {
 public:
     void process(InputEvent event);
+    void setFilterSettings(const FilterSettings& settings) noexcept {
+        filter_.setSettings(settings);
+    }
+    const FilterSettings& filterSettings() const noexcept {
+        return filter_.settings();
+    }
     const HistoryStore& history() const noexcept { return history_; }
 
 private:
