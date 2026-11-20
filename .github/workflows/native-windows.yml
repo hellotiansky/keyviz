@@ -1,0 +1,43 @@
+name: Build Native Windows
+
+on:
+  push:
+    branches:
+      - "rewrite/native-windows-cpp"
+    paths:
+      - "native/**"
+      - ".github/workflows/native-windows.yml"
+  pull_request:
+    paths:
+      - "native/**"
+      - ".github/workflows/native-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: MSVC x64 build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure x64
+        run: cmake -S native -B build/native -A x64
+
+      - name: Build Release
+        run: cmake --build build/native --config Release --parallel
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyviz-native-windows-x64
+          path: build/native/Release/KeyvizNative.exe
+          if-no-files-found: error
+          retention-days: 14
