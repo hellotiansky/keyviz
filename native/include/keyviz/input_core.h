@@ -20,6 +20,7 @@ private:
     bool registered_{false};
     static POINT lastMousePoint_;
     static bool haveMousePoint_;
+    static DWORD lastMouseMoveTick_;
 };
 
 } // namespace keyviz
