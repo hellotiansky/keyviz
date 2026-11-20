@@ -7,6 +7,7 @@ endif()
 
 add_executable(KeyvizNative WIN32
     src/main.cpp
+    src/input_core.cpp
     src/event_engine.cpp
     src/renderer.cpp
 )
