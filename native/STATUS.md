@@ -8,8 +8,9 @@
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
 - Completed: display topology change rebuilds the overlay set
 - Completed: extracted Raw Input capture and normalized keyboard/mouse button/wheel events
+- Completed: coalesced mouse movement samples with virtual-desktop cursor coordinates
 - Completed: InputEvent, FilterEngine, HistoryStore and EventEngine modules
-- In progress: runtime verification on mixed-DPI and hot-plug multi-monitor Windows systems
-- Next: configurable animation, persistent settings, filter editor and history browser
+- In progress: robust keyboard layout/modifier handling and configurable animation
+- Next: persistent native settings, filter editor, history browser and tray integration
 
 The original Tauri application remains intact on the base branch.
