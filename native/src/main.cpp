@@ -122,7 +122,8 @@ private:
             if (LOWORD(wParam) == kClearHistoryId) {
                 if (self->onClearHistory_) self->onClearHistory_();
                 return 0;
-            }\n            if (LOWORD(wParam) == kHideId) ShowWindow(hwnd, SW_HIDE);
+            }
+            if (LOWORD(wParam) == kHideId) ShowWindow(hwnd, SW_HIDE);
             return 0;
         case WM_CLOSE:
             ShowWindow(hwnd, SW_HIDE);
