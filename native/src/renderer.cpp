@@ -83,7 +83,7 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
     if (!factory_ || !createDeviceResources()) return;
 
     target_->BeginDraw();
-    target_->Clear(D2D1::ColorF(0, 0.0f));
+    target_->Clear(D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f));
 
     const D2D1_SIZE_F size = target_->GetSize();
     const D2D1_RECT_F panel = D2D1::RectF(
