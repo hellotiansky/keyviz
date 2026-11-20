@@ -3,7 +3,9 @@
 - Track: Windows-native C++20 rewrite
 - Build: CMake + MSVC x64
 - CI: `.github/workflows/native-windows.yml`
-- Current milestone: Stage 1 input/overlay/settings scaffold
-- Next: verify the Windows Actions build, then split modules into headers/sources and harden input handling.
+- Completed: Stage 1 Win32 overlay, Raw Input, bounded event history and native settings scaffold
+- Completed: Direct2D/DirectWrite renderer integration and event fade redraw loop
+- In progress: modular input/event architecture and Windows runtime validation
+- Next: per-monitor overlay windows, per-monitor DPI placement, monitor hot-plug, configurable animation and persistent settings
 
-This file also provides a post-workflow-creation push so the native Windows workflow is evaluated on the rewrite branch.
+The original Tauri application remains intact on the base branch.
