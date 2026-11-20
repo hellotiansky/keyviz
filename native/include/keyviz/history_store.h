@@ -23,5 +23,6 @@ public:
     void clear() noexcept { events_.clear(); }
 private:
     std::size_t capacity_;
+    std::deque<InputEvent> events_;
 };
 } // namespace keyviz
