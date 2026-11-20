@@ -15,6 +15,7 @@ public:
         return filter_.settings();
     }
     const HistoryStore& history() const noexcept { return history_; }
+    void clearHistory() noexcept { history_.clear(); }
 
 private:
     FilterEngine filter_;
