@@ -103,6 +103,10 @@ private:
                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 134, 195, 100, 30,
                 hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kHideId)),
                 instance, nullptr);
+            CreateWindowExW(0, L"BUTTON", L"Clear history",
+                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 246, 195, 130, 30,
+                hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kClearHistoryId)),
+                instance, nullptr);
             return 0;
         }
         case WM_COMMAND:
