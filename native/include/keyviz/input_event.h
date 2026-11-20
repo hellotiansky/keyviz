@@ -12,5 +12,6 @@ struct InputEvent {
     USHORT virtualKey{};
     unsigned repeatCount{1};
     bool isRepeat{false};
+    std::wstring chordLabel;
 };
 } // namespace keyviz
