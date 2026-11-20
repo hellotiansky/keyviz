@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <memory>
 #include <functional>
+#include <deque>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,6 +23,7 @@ constexpr int kOverlayHeight = 156;
 constexpr int kOverlayBottomMargin = 36;
 constexpr int kSettingsButtonId = 100;
 constexpr int kSettingsHotkeyId = 1;
+constexpr int kHistoryHotkeyId = 2;
 constexpr UINT_PTR kRedrawTimerId = 2;
 
 class SettingsWindow {
@@ -138,6 +140,100 @@ private:
     std::function<void()> onClearHistory_;
 };
 
+class HistoryWindow {
+public:
+    bool create(HINSTANCE instance,
+        std::function<const std::deque<InputEvent>&()> getEvents) {
+        getEvents_ = std::move(getEvents);
+        WNDCLASSEXW wc{sizeof(wc)};
+        wc.lpfnWndProc = &HistoryWindow::windowProc;
+        wc.hInstance = instance;
+        wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+        wc.lpszClassName = L"KeyvizNativeHistory";
+        if (!RegisterClassExW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
+            return false;
+        hwnd_ = CreateWindowExW(WS_EX_APPWINDOW, L"KeyvizNativeHistory",
+            L"Keyviz Native - Input History",
+            WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 620, 430,
+            nullptr, nullptr, instance, this);
+        return hwnd_ != nullptr;
+    }
+
+    void show() {
+        if (!hwnd_) return;
+        refresh();
+        ShowWindow(hwnd_, SW_SHOW);
+        SetForegroundWindow(hwnd_);
+    }
+
+    void refresh() const {
+        if (!hwnd_ || !IsWindowVisible(hwnd_)) return;
+        HWND list = GetDlgItem(hwnd_, kListId);
+        if (!list || !getEvents_) return;
+        SendMessageW(list, LB_RESETCONTENT, 0, 0);
+        const auto& events = getEvents_();
+        const DWORD now = GetTickCount();
+        for (const auto& event : events) {
+            const wchar_t* type = L"KEY";
+            switch (event.type) {
+            case InputEvent::Type::KeyDown: type = L"KEY DOWN"; break;
+            case InputEvent::Type::KeyUp: type = L"KEY UP"; break;
+            case InputEvent::Type::MouseDown: type = L"MOUSE DOWN"; break;
+            case InputEvent::Type::MouseUp: type = L"MOUSE UP"; break;
+            case InputEvent::Type::Wheel: type = L"WHEEL"; break;
+            case InputEvent::Type::MouseMove: type = L"MOUSE MOVE"; break;
+            }
+            const DWORD age = now - event.timestamp;
+            std::wstring line = L"[" + std::to_wstring(age) + L" ms ago]  ";
+            line += type;
+            line += L"    ";
+            line += event.chordLabel.empty() ? event.label : event.chordLabel;
+            if (event.repeatCount > 1)
+                line += L"  ×" + std::to_wstring(event.repeatCount);
+            SendMessageW(list, LB_ADDSTRING, 0,
+                reinterpret_cast<LPARAM>(line.c_str()));
+        }
+    }
+
+private:
+    static constexpr int kListId = 301;
+    static LRESULT CALLBACK windowProc(HWND hwnd, UINT message,
+        WPARAM wParam, LPARAM lParam) {
+        auto* self = reinterpret_cast<HistoryWindow*>(
+            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        if (message == WM_NCCREATE) {
+            const auto* create = reinterpret_cast<CREATESTRUCTW*>(lParam);
+            self = static_cast<HistoryWindow*>(create->lpCreateParams);
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA,
+                reinterpret_cast<LONG_PTR>(self));
+        }
+        if (!self) return DefWindowProcW(hwnd, message, wParam, lParam);
+        switch (message) {
+        case WM_CREATE:
+            CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", nullptr,
+                WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL |
+                    LBS_NOINTEGRALHEIGHT | LBS_HASSTRINGS,
+                10, 10, 580, 360, hwnd,
+                reinterpret_cast<HMENU>(static_cast<INT_PTR>(kListId)),
+                GetModuleHandleW(nullptr), nullptr);
+            return 0;
+        case WM_SIZE:
+            if (HWND list = GetDlgItem(hwnd, kListId))
+                MoveWindow(list, 10, 10, std::max(0, LOWORD(lParam) - 20),
+                    std::max(0, HIWORD(lParam) - 20), TRUE);
+            return 0;
+        case WM_CLOSE:
+            ShowWindow(hwnd, SW_HIDE);
+            return 0;
+        }
+        return DefWindowProcW(hwnd, message, wParam, lParam);
+    }
+
+    HWND hwnd_{};
+    std::function<const std::deque<InputEvent>&()> getEvents_;
+};
+
 struct OverlayWindow {
     HWND hwnd{};
     Renderer renderer;
@@ -171,6 +267,9 @@ public:
                 kAppName, MB_ICONERROR | MB_OK);
             return false;
         }
+        if (!historyWindow_.create(instance_, [this]() -> const std::deque<InputEvent>& {
+                return engine_.history().events();
+            })) return false;
         if (!settings_.create(instance_, initialFilters, [this](const FilterSettings& filters) {
                 if (settingsStore_.save(filters)) {
                     engine_.setFilterSettings(filters);
@@ -180,9 +279,14 @@ public:
                 }
             }, [this]() {
                 engine_.clearHistory();
+                historyWindow_.refresh();
                 KillTimer(inputWindow_, kRedrawTimerId);
                 invalidateOverlays();
             })) return false;
+        if (!RegisterHotKey(inputWindow_, kHistoryHotkeyId, MOD_CONTROL | MOD_SHIFT, 'H')) {
+            MessageBoxW(nullptr, L"Ctrl+Shift+H could not be registered.",
+                kAppName, MB_ICONWARNING | MB_OK);
+        }
         if (!RegisterHotKey(inputWindow_, kSettingsHotkeyId,
                 MOD_CONTROL | MOD_SHIFT, 'K')) {
             MessageBoxW(nullptr, L"Ctrl+Shift+K could not be registered.",
@@ -289,6 +393,7 @@ private:
         auto events = InputCore::decode(raw);
         if (events.empty()) return;
         for (auto& event : events) engine_.process(std::move(event));
+        historyWindow_.refresh();
         SetTimer(inputWindow_, kRedrawTimerId, 16, nullptr);
         invalidateOverlays();
     }
@@ -297,6 +402,7 @@ private:
         if (inputWindow_) {
             KillTimer(inputWindow_, kRedrawTimerId);
             UnregisterHotKey(inputWindow_, kSettingsHotkeyId);
+            UnregisterHotKey(inputWindow_, kHistoryHotkeyId);
         }
         input_.stop();
         for (auto& overlay : overlays_) {
@@ -328,6 +434,8 @@ private:
         case WM_HOTKEY:
             if (isInputWindow && wParam == kSettingsHotkeyId)
                 self->settings_.show();
+            if (isInputWindow && wParam == kHistoryHotkeyId)
+                self->historyWindow_.show();
             return 0;
         case WM_PAINT: {
             PAINTSTRUCT paint{};
@@ -369,6 +477,7 @@ private:
     EventEngine engine_;
     SettingsStore settingsStore_;
     SettingsWindow settings_;
+    HistoryWindow historyWindow_;
     std::vector<std::unique_ptr<OverlayWindow>> overlays_;
 };
 } // namespace keyviz
