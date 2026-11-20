@@ -21,27 +21,29 @@ Output: `build/native/Release/KeyvizNative.exe`.
 
 ## Current implementation
 - C++20 Win32 GUI application and per-monitor DPI awareness V2 request
-- Transparent, topmost, click-through overlay
-- Background keyboard and mouse Raw Input in a dedicated `InputCore` module
+- One click-through, topmost overlay window per enumerated display
+- Monitor-aware placement inside each display's work area
+- A single hidden top-level input window owns keyboard and mouse Raw Input registration
+- Input events are shared through one event engine and redrawn on every monitor overlay
+- Display topology changes trigger overlay teardown and recreation
 - Normalized key press/release, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Compound mouse-button packets expanded into individual events
-- Extracted `InputEvent`, `FilterEngine`, `HistoryStore` and `EventEngine` modules
+- Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - Bounded in-memory event history
 - Native Win32 settings window; Ctrl+Shift+K shortcut
-- Direct2D HWND render target and DirectWrite text rendering
+- Independent Direct2D HWND render target and DirectWrite renderer per display
 - Event-driven 16 ms redraw timer with a short fade-out window
 
 ## Known limitations
-- The overlay currently targets the primary display; independent overlays and placement per monitor are next.
+- Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
 - Animation is a basic event fade, not yet configurable.
 - Settings are a scaffold; persistence, filter editor and history browser are not implemented.
 - Mouse movement visualization and complete key-state/keyboard-layout handling remain to be implemented.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
 ## Next milestones
-1. Verify the Actions build and runtime behavior on Windows 10 x64.
-2. Add per-monitor overlay windows, DPI-aware placement and monitor hot-plug handling.
-3. Implement configurable animation, filters, history browsing and persisted settings.
-4. Complete native settings, tray integration and installer packaging.
+1. Verify the multi-monitor build and runtime behavior on Windows 10 x64.
+2. Add configurable animation, filters, history browsing and persisted settings.
+3. Complete native settings, tray integration and installer packaging.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
