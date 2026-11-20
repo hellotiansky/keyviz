@@ -3,6 +3,7 @@
 #include "keyviz/input_event.h"
 #include "keyviz/event_engine.h"
 #include "keyviz/renderer.h"
+#include "keyviz/settings_store.h"
 
 #include <algorithm>
 #include <memory>
@@ -92,6 +93,7 @@ public:
 
     bool initialize() {
         if (!registerWindowClasses()) return false;
+        engine_.setFilterSettings(settingsStore_.load());
 
         // A single hidden top-level window owns Raw Input and the global hotkey.
         // Overlay windows are presentation-only and never register input devices.
@@ -297,6 +299,7 @@ private:
     HWND inputWindow_{};
     InputCore input_;
     EventEngine engine_;
+    SettingsStore settingsStore_;
     SettingsWindow settings_;
     std::vector<std::unique_ptr<OverlayWindow>> overlays_;
 };
