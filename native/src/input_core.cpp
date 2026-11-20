@@ -1,5 +1,6 @@
 #include "keyviz/input_core.h"
 #include <hidusage.h>
+#include <cwctype>
 #include <iterator>
 #include <utility>
 namespace keyviz {
@@ -61,6 +62,38 @@ std::wstring InputCore::chordName(USHORT vk, const std::wstring& keyLabel) {
     chord += keyLabel;
     return chord;
 }
+std::wstring InputCore::localizedKeyName(const RAWKEYBOARD& key) {
+    const USHORT vk = normalizedVirtualKey(key);
+    if (isModifierKey(vk) || vk == VK_PACKET || vk == VK_PROCESSKEY)
+        return keyName(key);
+
+    HWND foreground = GetForegroundWindow();
+    DWORD threadId = foreground ? GetWindowThreadProcessId(foreground, nullptr) : 0;
+    HKL layout = GetKeyboardLayout(threadId);
+
+    BYTE state[256]{};
+    for (int code = 0; code < 256; ++code) {
+        if (GetAsyncKeyState(code) & 0x8000) state[code] |= 0x80;
+    }
+    // Preserve toggle state while taking the down-state from the physical keyboard.
+    for (const int toggleKey : {VK_CAPITAL, VK_NUMLOCK, VK_SCROLL}) {
+        if (GetKeyState(toggleKey) & 1) state[toggleKey] |= 1;
+    }
+
+    wchar_t translated[8]{};
+    const UINT scanCode = key.MakeCode;
+    // Flag 0x4 asks Windows not to mutate the keyboard buffer's dead-key state.
+    const int length = ToUnicodeEx(vk, scanCode, state, translated,
+        static_cast<int>(std::size(translated)), 0x4, layout);
+    if (length > 0) {
+        for (int i = 0; i < length; ++i) {
+            if (!iswprint(translated[i])) return keyName(key);
+        }
+        return std::wstring(translated, translated + length);
+    }
+    // Dead keys and non-printable keys retain their descriptive virtual-key name.
+    return keyName(key);
+}
 std::wstring InputCore::keyName(const RAWKEYBOARD& key) {
     const USHORT vk = normalizedVirtualKey(key);
     switch (vk) {
@@ -88,7 +121,7 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
         pressedKeys_[vk] = !keyUp;
         InputEvent event{};
         event.type = keyUp ? InputEvent::Type::KeyUp : InputEvent::Type::KeyDown;
-        event.label = keyName(key);
+        event.label = localizedKeyName(key);
         event.virtualKey = vk;
         event.isRepeat = repeat;
         if (!keyUp && !event.label.empty())
