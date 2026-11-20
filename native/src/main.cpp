@@ -115,7 +115,10 @@ private:
                 if (self->onApply_) self->onApply_(next);
                 return 0;
             }
-            if (LOWORD(wParam) == kClearHistoryId) {\n                if (self->onClearHistory_) self->onClearHistory_();\n                return 0;\n            }\n            if (LOWORD(wParam) == kHideId) ShowWindow(hwnd, SW_HIDE);
+            if (LOWORD(wParam) == kClearHistoryId) {
+                if (self->onClearHistory_) self->onClearHistory_();
+                return 0;
+            }\n            if (LOWORD(wParam) == kHideId) ShowWindow(hwnd, SW_HIDE);
             return 0;
         case WM_CLOSE:
             ShowWindow(hwnd, SW_HIDE);
@@ -126,7 +129,8 @@ private:
 
     HWND hwnd_{};
     FilterSettings settings_{};
-    std::function<void(const FilterSettings&)> onApply_;\n    std::function<void()> onClearHistory_;
+    std::function<void(const FilterSettings&)> onApply_;
+    std::function<void()> onClearHistory_;
 };
 
 struct OverlayWindow {
@@ -169,7 +173,11 @@ public:
                     MessageBoxW(inputWindow_, L"Could not save settings.",
                         kAppName, MB_ICONWARNING | MB_OK);
                 }
-            }, [this]() {\n                engine_.clearHistory();\n                KillTimer(inputWindow_, kRedrawTimerId);\n                invalidateOverlays();\n            })) return false;
+            }, [this]() {
+                engine_.clearHistory();
+                KillTimer(inputWindow_, kRedrawTimerId);
+                invalidateOverlays();
+            })) return false;
         if (!RegisterHotKey(inputWindow_, kSettingsHotkeyId,
                 MOD_CONTROL | MOD_SHIFT, 'K')) {
             MessageBoxW(nullptr, L"Ctrl+Shift+K could not be registered.",
