@@ -117,8 +117,8 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
         textBrush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
 
     secondaryBrush_->SetOpacity(0.92f);
-    const wchar_t* hint = L"Ctrl + Shift + K   ·   Native settings";
-    target_->DrawTextW(hint, static_cast<UINT32>(wcslen(hint)),
+    constexpr wchar_t hint[] = L"Ctrl + Shift + K   |   Native settings";
+    target_->DrawText(hint, static_cast<UINT32>(std::size(hint) - 1),
         bodyFormat_.Get(),
         D2D1::RectF(22.0f, 69.0f, size.width - 20.0f, 94.0f),
         secondaryBrush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
@@ -133,7 +133,7 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
         recent += event.label;
         if (++count == 5) break;
     }
-    target_->DrawTextW(recent.c_str(),
+    target_->DrawText(recent.c_str(),
         static_cast<UINT32>(recent.size()), bodyFormat_.Get(),
         D2D1::RectF(22.0f, 111.0f, size.width - 20.0f, 140.0f),
         secondaryBrush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
