@@ -12,6 +12,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cwctype>
 
 namespace keyviz {
 constexpr wchar_t kAppName[] = L"Keyviz Native";
@@ -170,8 +171,14 @@ public:
     void refresh() const {
         if (!hwnd_ || !IsWindowVisible(hwnd_)) return;
         HWND list = GetDlgItem(hwnd_, kListId);
-        if (!list || !getEvents_) return;
+        HWND search = GetDlgItem(hwnd_, kSearchId);
+        HWND typeFilter = GetDlgItem(hwnd_, kTypeFilterId);
+        if (!list || !search || !typeFilter || !getEvents_) return;
         SendMessageW(list, LB_RESETCONTENT, 0, 0);
+        const int selectedType = static_cast<int>(SendMessageW(typeFilter, CB_GETCURSEL, 0, 0));
+        wchar_t searchBuffer[256]{};
+        GetWindowTextW(search, searchBuffer, static_cast<int>(std::size(searchBuffer)));
+        const std::wstring query(searchBuffer);
         const auto& events = getEvents_();
         const DWORD now = GetTickCount();
         for (const auto& event : events) {
@@ -184,6 +191,9 @@ public:
             case InputEvent::Type::Wheel: type = L"WHEEL"; break;
             case InputEvent::Type::MouseMove: type = L"MOUSE MOVE"; break;
             }
+            std::wstring searchable = event.label + L" " + event.chordLabel;
+            if (!matchesType(event, selectedType) || !containsInsensitive(searchable, query))
+                continue;
             const DWORD age = now - event.timestamp;
             std::wstring line = L"[" + std::to_wstring(age) + L" ms ago]  ";
             line += type;
@@ -197,7 +207,29 @@ public:
     }
 
 private:
-    static constexpr int kListId = 301;
+    static constexpr int kSearchId = 301;
+    static constexpr int kTypeFilterId = 302;
+    static constexpr int kListId = 303;
+
+    static bool containsInsensitive(const std::wstring& value, const std::wstring& query) {
+        if (query.empty()) return true;
+        std::wstring lhs(value), rhs(query);
+        std::transform(lhs.begin(), lhs.end(), lhs.begin(), towupper);
+        std::transform(rhs.begin(), rhs.end(), rhs.begin(), towupper);
+        return lhs.find(rhs) != std::wstring::npos;
+    }
+
+    static bool matchesType(const InputEvent& event, int filter) {
+        switch (filter) {
+        case 1: return event.type == InputEvent::Type::KeyDown ||
+                       event.type == InputEvent::Type::KeyUp;
+        case 2: return event.type == InputEvent::Type::MouseDown ||
+                       event.type == InputEvent::Type::MouseUp;
+        case 3: return event.type == InputEvent::Type::Wheel;
+        case 4: return event.type == InputEvent::Type::MouseMove;
+        default: return true;
+        }
+    }
     static LRESULT CALLBACK windowProc(HWND hwnd, UINT message,
         WPARAM wParam, LPARAM lParam) {
         auto* self = reinterpret_cast<HistoryWindow*>(
@@ -210,19 +242,51 @@ private:
         }
         if (!self) return DefWindowProcW(hwnd, message, wParam, lParam);
         switch (message) {
-        case WM_CREATE:
+        case WM_CREATE: {
+            const HINSTANCE instance = GetModuleHandleW(nullptr);
+            CreateWindowExW(0, L"STATIC", L"Search:", WS_CHILD | WS_VISIBLE,
+                10, 10, 55, 24, hwnd, nullptr, instance, nullptr);
+            CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", nullptr,
+                WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
+                68, 8, 250, 26, hwnd,
+                reinterpret_cast<HMENU>(static_cast<INT_PTR>(kSearchId)),
+                instance, nullptr);
+            HWND combo = CreateWindowExW(0, L"COMBOBOX", nullptr,
+                WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST,
+                330, 8, 180, 200, hwnd,
+                reinterpret_cast<HMENU>(static_cast<INT_PTR>(kTypeFilterId)),
+                instance, nullptr);
+            const wchar_t* options[] = {L"All events", L"Keyboard", L"Mouse buttons",
+                L"Mouse wheel", L"Mouse movement"};
+            for (const auto* option : options)
+                SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(option));
+            SendMessageW(combo, CB_SETCURSEL, 0, 0);
             CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", nullptr,
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL |
                     LBS_NOINTEGRALHEIGHT | LBS_HASSTRINGS,
-                10, 10, 580, 360, hwnd,
+                10, 42, 580, 328, hwnd,
                 reinterpret_cast<HMENU>(static_cast<INT_PTR>(kListId)),
-                GetModuleHandleW(nullptr), nullptr);
+                instance, nullptr);
             return 0;
-        case WM_SIZE:
+        }
+        case WM_COMMAND:
+            if ((LOWORD(wParam) == kSearchId && HIWORD(wParam) == EN_CHANGE) ||
+                (LOWORD(wParam) == kTypeFilterId && HIWORD(wParam) == CBN_SELCHANGE)) {
+                self->refresh();
+                return 0;
+            }
+            break;
+        case WM_SIZE: {
+            const int width = std::max(0, static_cast<int>(LOWORD(lParam)) - 20);
+            const int height = std::max(0, static_cast<int>(HIWORD(lParam)) - 62);
+            if (HWND search = GetDlgItem(hwnd, kSearchId))
+                MoveWindow(search, 68, 8, std::max(120, width - 330), 26, TRUE);
+            if (HWND filter = GetDlgItem(hwnd, kTypeFilterId))
+                MoveWindow(filter, std::max(330, width - 180), 8, 180, 200, TRUE);
             if (HWND list = GetDlgItem(hwnd, kListId))
-                MoveWindow(list, 10, 10, std::max(0, LOWORD(lParam) - 20),
-                    std::max(0, HIWORD(lParam) - 20), TRUE);
+                MoveWindow(list, 10, 42, width, height, TRUE);
             return 0;
+        }
         case WM_CLOSE:
             ShowWindow(hwnd, SW_HIDE);
             return 0;
