@@ -5,7 +5,7 @@
 
 namespace keyviz {
 
-bool InputCore::start(HWND target) {
+bool InputCore::start(HWND target) noexcept {
     RAWINPUTDEVICE devices[2]{};
     devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
     devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
