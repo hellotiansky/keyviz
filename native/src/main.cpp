@@ -103,7 +103,7 @@ private:
                 WS_CHILD | WS_VISIBLE, 20, 20, 400, 24,
                 hwnd, nullptr, instance, nullptr);
             CreateWindowExW(0, L"STATIC",
-                L"Input: Raw Input | Renderer: Win32 GDI (temporary)",
+                L"Input: Raw Input | Renderer: Direct2D + DirectWrite",
                 WS_CHILD | WS_VISIBLE, 20, 58, 400, 24,
                 hwnd, nullptr, instance, nullptr);
             CreateWindowExW(0, L"STATIC",
