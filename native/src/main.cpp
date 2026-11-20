@@ -1,5 +1,7 @@
 #include <windows.h>
 #include <hidusage.h>
+#include "keyviz/input_event.h"
+#include "keyviz/renderer.h"
 
 #include <deque>
 #include <iterator>
@@ -15,13 +17,6 @@ constexpr int kOverlayWidth = 580;
 constexpr int kOverlayHeight = 156;
 constexpr int kSettingsButtonId = 100;
 constexpr int kSettingsHotkeyId = 1;
-
-struct InputEvent {
-    enum class Type { KeyDown, KeyUp, MouseDown, MouseUp, Wheel };
-    Type type{};
-    std::wstring label;
-    DWORD timestamp{};
-};
 
 class HistoryStore {
 public:
@@ -184,6 +179,11 @@ public:
         if (!overlay_) return false;
 
         SetLayeredWindowAttributes(overlay_, 0, 242, LWA_ALPHA);
+        if (!renderer_.initialize(overlay_)) {
+            MessageBoxW(nullptr, L"Direct2D renderer initialization failed.",
+                kAppName, MB_ICONERROR | MB_OK);
+            return false;
+        }
         ShowWindow(overlay_, SW_SHOWNOACTIVATE);
         UpdateWindow(overlay_);
 
@@ -210,6 +210,7 @@ public:
         }
         UnregisterHotKey(overlay_, kSettingsHotkeyId);
         input_.stop();
+        renderer_.shutdown();
         return static_cast<int>(message.wParam);
     }
 
@@ -253,50 +254,8 @@ private:
         }
 
         engine_.process(std::move(event));
+        SetTimer(overlay_, 2, 16, nullptr);
         InvalidateRect(overlay_, nullptr, FALSE);
-    }
-
-    void paint(HDC dc) const {
-        RECT client{};
-        GetClientRect(overlay_, &client);
-        HBRUSH background = CreateSolidBrush(RGB(25, 29, 37));
-        FillRect(dc, &client, background);
-        DeleteObject(background);
-        SetBkMode(dc, TRANSPARENT);
-        SetTextColor(dc, RGB(245, 247, 250));
-
-        HFONT font = CreateFontW(32, 0, 0, 0, FW_SEMIBOLD,
-            FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-            DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
-        HGDIOBJ oldFont = SelectObject(dc, font);
-        const auto& history = engine_.history().events();
-        const std::wstring headline = history.empty()
-            ? L"Waiting for keyboard or mouse input..." : history.front().label;
-        RECT title{22, 14, client.right - 20, 58};
-        DrawTextW(dc, headline.c_str(), -1, &title,
-            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-        SelectObject(dc, oldFont);
-        DeleteObject(font);
-
-        SetTextColor(dc, RGB(170, 182, 198));
-        RECT hint{22, 72, client.right - 20, 100};
-        DrawTextW(dc, L"Ctrl + Shift + K  |  Open native settings",
-            -1, &hint, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-
-        std::wstring recent = L"Recent: ";
-        unsigned count = 0;
-        for (const auto& item : history) {
-            if (item.type != InputEvent::Type::KeyDown &&
-                item.type != InputEvent::Type::MouseDown &&
-                item.type != InputEvent::Type::Wheel) continue;
-            if (count) recent += L"  |  ";
-            recent += item.label;
-            if (++count == 5) break;
-        }
-        RECT historyRect{22, 112, client.right - 20, 142};
-        DrawTextW(dc, recent.c_str(), -1, &historyRect,
-            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     }
 
     static LRESULT CALLBACK windowProc(HWND hwnd, UINT message,
@@ -319,11 +278,26 @@ private:
             return 0;
         case WM_PAINT: {
             PAINTSTRUCT paint{};
-            HDC dc = BeginPaint(hwnd, &paint);
-            self->paint(dc);
+            BeginPaint(hwnd, &paint);
+            self->renderer_.render(self->engine_.history().events());
             EndPaint(hwnd, &paint);
             return 0;
         }
+        case WM_SIZE:
+            self->renderer_.resize(LOWORD(lParam), HIWORD(lParam));
+            InvalidateRect(hwnd, nullptr, FALSE);
+            return 0;
+        case WM_TIMER:
+            if (wParam == 2) {
+                const auto& events = self->engine_.history().events();
+                if (events.empty() ||
+                    GetTickCount() - events.front().timestamp > 1150) {
+                    KillTimer(hwnd, 2);
+                } else {
+                    InvalidateRect(hwnd, nullptr, FALSE);
+                }
+            }
+            return 0;
         case WM_DISPLAYCHANGE:
             InvalidateRect(hwnd, nullptr, FALSE);
             return 0;
@@ -339,10 +313,12 @@ private:
     InputCore input_;
     EventEngine engine_;
     SettingsWindow settings_;
+    Renderer renderer_;
 };
 } // namespace keyviz
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     keyviz::App app(instance);
     if (!app.initialize()) return 1;
     return app.run();
