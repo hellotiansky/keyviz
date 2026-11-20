@@ -4,19 +4,23 @@
 #include "keyviz/event_engine.h"
 #include "keyviz/renderer.h"
 
-#include <deque>
+#include <algorithm>
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace keyviz {
 constexpr wchar_t kAppName[] = L"Keyviz Native";
 constexpr wchar_t kOverlayClass[] = L"KeyvizNativeOverlay";
+constexpr wchar_t kInputClass[] = L"KeyvizNativeInput";
 constexpr wchar_t kSettingsClass[] = L"KeyvizNativeSettings";
-constexpr UINT kMaxHistory = 80;
 constexpr int kOverlayWidth = 580;
 constexpr int kOverlayHeight = 156;
+constexpr int kOverlayBottomMargin = 36;
 constexpr int kSettingsButtonId = 100;
 constexpr int kSettingsHotkeyId = 1;
+constexpr UINT_PTR kRedrawTimerId = 2;
 
 class SettingsWindow {
 public:
@@ -77,44 +81,39 @@ private:
     HWND hwnd_{};
 };
 
+struct OverlayWindow {
+    HWND hwnd{};
+    Renderer renderer;
+};
+
 class App {
 public:
     explicit App(HINSTANCE instance) : instance_(instance) {}
 
     bool initialize() {
-        WNDCLASSEXW wc{sizeof(wc)};
-        wc.lpfnWndProc = &App::windowProc;
-        wc.hInstance = instance_;
-        wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        wc.lpszClassName = kOverlayClass;
-        if (!RegisterClassExW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
-            return false;
+        if (!registerWindowClasses()) return false;
 
-        const int x = (GetSystemMetrics(SM_CXSCREEN) - kOverlayWidth) / 2;
-        const int y = GetSystemMetrics(SM_CYSCREEN) - kOverlayHeight - 90;
-        overlay_ = CreateWindowExW(
-            WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
-            kOverlayClass, kAppName, WS_POPUP, x, y,
-            kOverlayWidth, kOverlayHeight, nullptr, nullptr, instance_, this);
-        if (!overlay_) return false;
+        // A single hidden top-level window owns Raw Input and the global hotkey.
+        // Overlay windows are presentation-only and never register input devices.
+        inputWindow_ = CreateWindowExW(
+            WS_EX_TOOLWINDOW, kInputClass, kAppName, WS_POPUP,
+            0, 0, 0, 0, nullptr, nullptr, instance_, this);
+        if (!inputWindow_) return false;
 
-        SetLayeredWindowAttributes(overlay_, 0, 242, LWA_ALPHA);
-        if (!renderer_.initialize(overlay_)) {
-            MessageBoxW(nullptr, L"Direct2D renderer initialization failed.",
-                kAppName, MB_ICONERROR | MB_OK);
-            return false;
-        }
-        ShowWindow(overlay_, SW_SHOWNOACTIVATE);
-        UpdateWindow(overlay_);
-
-        if (!input_.start(overlay_)) {
+        if (!input_.start(inputWindow_)) {
             MessageBoxW(nullptr,
                 L"Could not register keyboard and mouse Raw Input devices.",
                 kAppName, MB_ICONERROR | MB_OK);
             return false;
         }
+
+        if (!rebuildOverlays()) {
+            MessageBoxW(nullptr, L"No display could host a Keyviz overlay.",
+                kAppName, MB_ICONERROR | MB_OK);
+            return false;
+        }
         if (!settings_.create(instance_)) return false;
-        if (!RegisterHotKey(overlay_, kSettingsHotkeyId,
+        if (!RegisterHotKey(inputWindow_, kSettingsHotkeyId,
                 MOD_CONTROL | MOD_SHIFT, 'K')) {
             MessageBoxW(nullptr, L"Ctrl+Shift+K could not be registered.",
                 kAppName, MB_ICONWARNING | MB_OK);
@@ -128,21 +127,115 @@ public:
             TranslateMessage(&message);
             DispatchMessageW(&message);
         }
-        UnregisterHotKey(overlay_, kSettingsHotkeyId);
-        input_.stop();
-        renderer_.shutdown();
+        shutdown();
         return static_cast<int>(message.wParam);
     }
 
 private:
+    bool registerWindowClasses() {
+        WNDCLASSEXW overlayClass{sizeof(overlayClass)};
+        overlayClass.lpfnWndProc = &App::windowProc;
+        overlayClass.hInstance = instance_;
+        overlayClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        overlayClass.lpszClassName = kOverlayClass;
+        if (!RegisterClassExW(&overlayClass) &&
+            GetLastError() != ERROR_CLASS_ALREADY_EXISTS) return false;
+
+        WNDCLASSEXW inputClass{sizeof(inputClass)};
+        inputClass.lpfnWndProc = &App::windowProc;
+        inputClass.hInstance = instance_;
+        inputClass.lpszClassName = kInputClass;
+        if (!RegisterClassExW(&inputClass) &&
+            GetLastError() != ERROR_CLASS_ALREADY_EXISTS) return false;
+        return true;
+    }
+
+    static BOOL CALLBACK monitorCallback(
+        HMONITOR monitor, HDC, LPRECT, LPARAM context) {
+        auto* self = reinterpret_cast<App*>(context);
+        return self->createOverlay(monitor) ? TRUE : FALSE;
+    }
+
+    bool createOverlay(HMONITOR monitor) {
+        MONITORINFO info{sizeof(info)};
+        if (!GetMonitorInfoW(monitor, &info)) return false;
+
+        const RECT work = info.rcWork;
+        const int workWidth = work.right - work.left;
+        const int workHeight = work.bottom - work.top;
+        const int width = std::max(1, std::min(kOverlayWidth, workWidth - 40));
+        const int height = std::max(1, std::min(kOverlayHeight, workHeight - 20));
+        const int x = work.left + (workWidth - width) / 2;
+        const int y = work.bottom - height - kOverlayBottomMargin;
+
+        HWND hwnd = CreateWindowExW(
+            WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
+            kOverlayClass, kAppName, WS_POPUP, x, y, width, height,
+            nullptr, nullptr, instance_, this);
+        if (!hwnd) return false;
+
+        auto overlay = std::make_unique<OverlayWindow>();
+        overlay->hwnd = hwnd;
+        if (!overlay->renderer.initialize(hwnd)) {
+            DestroyWindow(hwnd);
+            return false;
+        }
+        SetLayeredWindowAttributes(hwnd, 0, 242, LWA_ALPHA);
+        overlays_.push_back(std::move(overlay));
+        ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+        UpdateWindow(hwnd);
+        return true;
+    }
+
+    bool rebuildOverlays() {
+        for (auto& overlay : overlays_) {
+            overlay->renderer.shutdown();
+            if (IsWindow(overlay->hwnd)) DestroyWindow(overlay->hwnd);
+        }
+        overlays_.clear();
+
+        if (!EnumDisplayMonitors(nullptr, nullptr,
+                &App::monitorCallback, reinterpret_cast<LPARAM>(this))) {
+            // EnumDisplayMonitors returns FALSE if enumeration was interrupted.
+            return false;
+        }
+        return !overlays_.empty();
+    }
+
+    OverlayWindow* findOverlay(HWND hwnd) noexcept {
+        const auto it = std::find_if(overlays_.begin(), overlays_.end(),
+            [hwnd](const auto& overlay) { return overlay->hwnd == hwnd; });
+        return it == overlays_.end() ? nullptr : it->get();
+    }
+
+    void invalidateOverlays() const noexcept {
+        for (const auto& overlay : overlays_)
+            InvalidateRect(overlay->hwnd, nullptr, FALSE);
+    }
+
     void handleRawInput(HRAWINPUT handle) {
         RAWINPUT raw{};
         if (!InputCore::read(handle, raw)) return;
         auto events = InputCore::decode(raw);
         if (events.empty()) return;
         for (auto& event : events) engine_.process(std::move(event));
-        SetTimer(overlay_, 2, 16, nullptr);
-        InvalidateRect(overlay_, nullptr, FALSE);
+        SetTimer(inputWindow_, kRedrawTimerId, 16, nullptr);
+        invalidateOverlays();
+    }
+
+    void shutdown() noexcept {
+        if (inputWindow_) {
+            KillTimer(inputWindow_, kRedrawTimerId);
+            UnregisterHotKey(inputWindow_, kSettingsHotkeyId);
+        }
+        input_.stop();
+        for (auto& overlay : overlays_) {
+            overlay->renderer.shutdown();
+            if (IsWindow(overlay->hwnd)) DestroyWindow(overlay->hwnd);
+        }
+        overlays_.clear();
+        if (inputWindow_ && IsWindow(inputWindow_)) DestroyWindow(inputWindow_);
+        inputWindow_ = nullptr;
     }
 
     static LRESULT CALLBACK windowProc(HWND hwnd, UINT message,
@@ -155,52 +248,57 @@ private:
         }
         if (!self) return DefWindowProcW(hwnd, message, wParam, lParam);
 
+        const bool isInputWindow = hwnd == self->inputWindow_;
         switch (message) {
         case WM_INPUT:
-            self->handleRawInput(reinterpret_cast<HRAWINPUT>(lParam));
+            if (isInputWindow)
+                self->handleRawInput(reinterpret_cast<HRAWINPUT>(lParam));
             // Required cleanup for foreground WM_INPUT messages.
             return DefWindowProcW(hwnd, message, wParam, lParam);
         case WM_HOTKEY:
-            if (wParam == kSettingsHotkeyId) self->settings_.show();
+            if (isInputWindow && wParam == kSettingsHotkeyId)
+                self->settings_.show();
             return 0;
         case WM_PAINT: {
             PAINTSTRUCT paint{};
             BeginPaint(hwnd, &paint);
-            self->renderer_.render(self->engine_.history().events());
+            if (auto* overlay = self->findOverlay(hwnd))
+                overlay->renderer.render(self->engine_.history().events());
             EndPaint(hwnd, &paint);
             return 0;
         }
         case WM_SIZE:
-            self->renderer_.resize(LOWORD(lParam), HIWORD(lParam));
-            InvalidateRect(hwnd, nullptr, FALSE);
+            if (auto* overlay = self->findOverlay(hwnd)) {
+                overlay->renderer.resize(LOWORD(lParam), HIWORD(lParam));
+                InvalidateRect(hwnd, nullptr, FALSE);
+            }
             return 0;
         case WM_TIMER:
-            if (wParam == 2) {
+            if (isInputWindow && wParam == kRedrawTimerId) {
                 const auto& events = self->engine_.history().events();
                 if (events.empty() ||
                     GetTickCount() - events.front().timestamp > 1150) {
-                    KillTimer(hwnd, 2);
-                } else {
-                    InvalidateRect(hwnd, nullptr, FALSE);
+                    KillTimer(hwnd, kRedrawTimerId);
                 }
+                self->invalidateOverlays();
             }
             return 0;
         case WM_DISPLAYCHANGE:
-            InvalidateRect(hwnd, nullptr, FALSE);
+            if (isInputWindow) self->rebuildOverlays();
             return 0;
         case WM_DESTROY:
-            PostQuitMessage(0);
+            if (isInputWindow) PostQuitMessage(0);
             return 0;
         }
         return DefWindowProcW(hwnd, message, wParam, lParam);
     }
 
     HINSTANCE instance_{};
-    HWND overlay_{};
+    HWND inputWindow_{};
     InputCore input_;
     EventEngine engine_;
     SettingsWindow settings_;
-    Renderer renderer_;
+    std::vector<std::unique_ptr<OverlayWindow>> overlays_;
 };
 } // namespace keyviz
 
