@@ -52,8 +52,8 @@ bool Renderer::createDeviceResources() noexcept {
     HRESULT hr = factory_->CreateHwndRenderTarget(
         D2D1::RenderTargetProperties(
             D2D1_RENDER_TARGET_TYPE_DEFAULT,
-            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM,
-                              D2D1_ALPHA_MODE_PREMULTIPLIED)),
+            D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN,
+                              D2D1_ALPHA_MODE_IGNORE)),
         D2D1::HwndRenderTargetProperties(hwnd_, size),
         &target_);
     if (FAILED(hr)) return false;
@@ -111,7 +111,7 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
     const std::wstring headline = history.empty()
         ? L"Waiting for keyboard or mouse input..."
         : history.front().label;
-    target_->DrawTextW(headline.c_str(),
+    target_->DrawText(headline.c_str(),
         static_cast<UINT32>(headline.size()), titleFormat_.Get(),
         D2D1::RectF(22.0f, 13.0f, size.width - 20.0f, 57.0f),
         textBrush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
