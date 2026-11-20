@@ -120,7 +120,7 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
         }
     }
     std::wstring headline = latestMeaningful
-        ? latestMeaningful->label
+        ? (latestMeaningful->chordLabel.empty() ? latestMeaningful->label : latestMeaningful->chordLabel)
         : (latestPointer ? L"Mouse movement" : L"Waiting for keyboard or mouse input...");
     if (latestMeaningful && latestMeaningful->repeatCount > 1)
         headline += L"  ×" + std::to_wstring(latestMeaningful->repeatCount);
@@ -147,7 +147,7 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
             event.type != InputEvent::Type::MouseDown &&
             event.type != InputEvent::Type::Wheel) continue;
         if (count) recent += L"    /    ";
-        recent += event.label;
+        recent += event.chordLabel.empty() ? event.label : event.chordLabel;
         if (event.repeatCount > 1)
             recent += L" ×" + std::to_wstring(event.repeatCount);
         if (++count == 5) break;
