@@ -14,6 +14,8 @@ public:
     static std::wstring keyName(const RAWKEYBOARD& key);
 private:
     static USHORT normalizedVirtualKey(const RAWKEYBOARD& key) noexcept;
+    static bool isModifierKey(USHORT virtualKey) noexcept;
+    static std::wstring chordName(USHORT virtualKey, const std::wstring& keyLabel);
     bool registered_{false};
     static POINT lastMousePoint_;
     static bool haveMousePoint_;
