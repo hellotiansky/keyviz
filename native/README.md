@@ -27,7 +27,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Input events are shared through one event engine and redrawn on every monitor overlay
 - Display topology changes trigger overlay teardown and recreation
 - Normalized key press/release, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
-- Compound mouse-button packets expanded into individual events
+- Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - Bounded in-memory event history
 - Native Win32 settings window; Ctrl+Shift+K shortcut
@@ -38,12 +38,13 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
 - Animation is a basic event fade, not yet configurable.
 - Settings are a scaffold; persistence, filter editor and history browser are not implemented.
-- Mouse movement visualization and complete key-state/keyboard-layout handling remain to be implemented.
+- Full keyboard layout/IME and modifier-state semantics remain to be implemented.
+- Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
 ## Next milestones
-1. Verify the multi-monitor build and runtime behavior on Windows 10 x64.
-2. Add configurable animation, filters, history browsing and persisted settings.
-3. Complete native settings, tray integration and installer packaging.
+1. Add robust modifier/keyboard-layout handling and configurable animation.
+2. Build persistent native settings, filter editor and history browser.
+3. Add tray integration and installer packaging.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
