@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cwctype>
 #include <cstddef>
 #include <string>
 
@@ -28,7 +27,10 @@ inline std::wstring translatedKeyLabel(
         return fallback;
 
     for (std::size_t i = 0; i < count; ++i) {
-        if (!iswprint(translated[i]))
+        const auto codePoint = static_cast<unsigned int>(translated[i]);
+        // Do not use iswprint here: its answer depends on the CRT's active
+        // locale (often the default "C" locale), which rejects valid CJK text.
+        if (codePoint < 0x20u || (codePoint >= 0x7Fu && codePoint <= 0x9Fu))
             return fallback;
     }
 
