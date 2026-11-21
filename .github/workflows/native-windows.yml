@@ -34,6 +34,9 @@ jobs:
       - name: Build Release
         run: cmake --build build/native --config Release --parallel
 
+      - name: Run native unit tests
+        run: ctest --test-dir build/native -C Release --output-on-failure
+
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
