@@ -378,9 +378,13 @@ private:
                 csvEscape(event.chordLabel) + L"," + std::to_wstring(event.repeatCount) + L"\r\n";
             output << toUtf8(row);
         }
+        // Flush buffered bytes and close explicitly so late disk-full,
+        // quota, or device errors are not reported as a successful export.
+        output.flush();
+        output.close();
         if (!output) {
-            MessageBoxW(hwnd_, L"An error occurred while writing the CSV file.", kAppName,
-                MB_ICONERROR | MB_OK);
+            MessageBoxW(hwnd_, L"An error occurred while writing the CSV file. Check that the destination is writable and has enough free space.",
+                kAppName, MB_ICONERROR | MB_OK);
             return;
         }
         MessageBoxW(hwnd_, L"History exported successfully.", kAppName, MB_ICONINFORMATION | MB_OK);
