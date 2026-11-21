@@ -1,6 +1,7 @@
 #include "keyviz/input_core.h"
 #include "keyviz/mouse_sampling.h"
 #include "keyviz/keyboard_translation.h"
+#include "keyviz/mouse_wheel.h"
 #include <hidusage.h>
 #include <cwctype>
 #include <iterator>
@@ -229,14 +230,14 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
     addButton(RI_MOUSE_BUTTON_4_DOWN, RI_MOUSE_BUTTON_4_UP, L"X1");
     addButton(RI_MOUSE_BUTTON_5_DOWN, RI_MOUSE_BUTTON_5_UP, L"X2");
     if (flags & RI_MOUSE_WHEEL) {
-        const SHORT delta = static_cast<SHORT>(mouse.usButtonData);
-        appendPointerEvent(InputEvent::Type::Wheel,
-            delta > 0 ? L"Wheel Up" : L"Wheel Down");
+        if (const wchar_t* label = mouseWheelLabel(
+                static_cast<SHORT>(mouse.usButtonData), false))
+            appendPointerEvent(InputEvent::Type::Wheel, label);
     }
     if (flags & RI_MOUSE_HWHEEL) {
-        const SHORT delta = static_cast<SHORT>(mouse.usButtonData);
-        appendPointerEvent(InputEvent::Type::Wheel,
-            delta > 0 ? L"Wheel Right" : L"Wheel Left");
+        if (const wchar_t* label = mouseWheelLabel(
+                static_cast<SHORT>(mouse.usButtonData), true))
+            appendPointerEvent(InputEvent::Type::Wheel, label);
     }
     if (haveCursorPoint &&
         ((mouse.usFlags & MOUSE_MOVE_ABSOLUTE) || mouse.lLastX != 0 || mouse.lLastY != 0)) {
