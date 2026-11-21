@@ -17,8 +17,8 @@
 - Completed: native settings window, persisted event filters and configurable 40/80/160/320-event history capacity
 - Completed: searchable/filterable history browser, event counts, empty states and filtered UTF-8 CSV export
 - Completed: CTest coverage for history capacity, resizing, clearing, movement coalescing across action boundaries (including refreshed monotonic and wall-clock timestamps), persistence round-trips, mixed-DPI layout, signed multi-monitor pointer coordinates and mouse sampling cadence/tick-wraparound
-- Completed: Raw Input core tests for left/right Ctrl normalization, right Shift/right Alt chord tracking, modifier chord state, AltGr combinations and per-device key repeat
-- Completed: Raw Input keyboard removal erases only the matching per-device state entry without querying potentially invalid device metadata
+- Completed: Raw Input core tests for left/right Ctrl normalization, right Shift/right Alt chord tracking, modifier chord state, AltGr combinations per-device key repeat, and shared modifier holds across keyboards
+- Completed: Raw Input keyboard removal erases only the matching per-device state entry without querying potentially invalid device metadata; tests cover unrelated arrivals and releases on one keyboard while another still holds the same modifier
 - Completed: InputCore test verifies modifier reset clears stale chord state after keyboard removal
 - Completed: capture start/stop resets tracked keyboard modifiers and mouse sampling baselines; CTest covers stop-time reset across multiple keyboard devices
 - Completed: keyboard repeat detection is isolated per Raw Input device; CTest covers independent initial presses, repeats and release/re-press sequences
