@@ -7,6 +7,13 @@
 namespace keyviz {
 
 bool Renderer::initialize(HWND hwnd) {
+    // Initialization may fail after any COM object has been created. Keep the
+    // renderer reusable by releasing the entire partial state on every exit.
+    const auto fail = [this]() noexcept {
+        shutdown();
+        return false;
+    };
+    if (!hwnd || !IsWindow(hwnd)) return fail();
     hwnd_ = hwnd;
 
     D2D1_FACTORY_OPTIONS options{};
@@ -18,7 +25,7 @@ bool Renderer::initialize(HWND hwnd) {
         __uuidof(ID2D1Factory),
         &options,
         reinterpret_cast<void**>(factory_.GetAddressOf()));
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) return fail();
 
     hr = DWriteCreateFactory(
         DWRITE_FACTORY_TYPE_SHARED,
@@ -39,10 +46,11 @@ bool Renderer::initialize(HWND hwnd) {
     if (FAILED(hr)) return false;
 
     RECT rect{};
-    GetClientRect(hwnd_, &rect);
-    width_ = static_cast<UINT>(rect.right - rect.left);
-    height_ = static_cast<UINT>(rect.bottom - rect.top);
-    return createDeviceResources();
+    if (!GetClientRect(hwnd_, &rect)) return fail();
+    width_ = static_cast<UINT>(std::max<LONG>(0, rect.right - rect.left));
+    height_ = static_cast<UINT>(std::max<LONG>(0, rect.bottom - rect.top));
+    if (!createDeviceResources()) return fail();
+    return true;
 }
 
 bool Renderer::createDeviceResources() noexcept {
