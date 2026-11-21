@@ -48,10 +48,6 @@ void InputCore::resetKeyboardState() noexcept {
     pressedKeysByDevice_.clear();
 }
 
-void InputCore::resetKeyboardState(HANDLE device) noexcept {
-    pressedKeysByDevice_.erase(device);
-}
-
 bool InputCore::isKeyPressed(USHORT virtualKey) noexcept {
     for (const auto& [device, keys] : pressedKeysByDevice_) {
         (void)device;
@@ -63,19 +59,11 @@ bool InputCore::isKeyPressed(USHORT virtualKey) noexcept {
 void InputCore::handleDeviceChange(WPARAM change, HANDLE device) noexcept {
     if (change != GIDC_REMOVAL) return;
 
-    RID_DEVICE_INFO info{};
-    info.cbSize = sizeof(info);
-    UINT size = sizeof(info);
-    const UINT result = GetRawInputDeviceInfoW(
-        device, RIDI_DEVICEINFO, &info, &size);
-
-    // If device metadata cannot be queried during removal, reset conservatively:
-    // stale modifier state is worse than temporarily losing a held chord.
-    if (result == static_cast<UINT>(-1)) {
-        resetKeyboardState();
-    } else if (info.dwType == RIM_TYPEKEYBOARD) {
-        resetKeyboardState(device);
-    }
+    // Only keyboard packets create entries in pressedKeysByDevice_. Remove
+    // this handle directly: querying device metadata during removal is
+    // unreliable because Windows may already have invalidated the handle.
+    const auto it = pressedKeysByDevice_.find(device);
+    if (it != pressedKeysByDevice_.end()) pressedKeysByDevice_.erase(it);
 }
 
 bool InputCore::read(HRAWINPUT handle, RAWINPUT& raw) noexcept {
