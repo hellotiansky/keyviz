@@ -45,12 +45,17 @@ public:
             return WritePrivateProfileStringW(section, key,
                 value.c_str(), path.c_str()) != FALSE;
         };
-        return write(L"Filters", L"Keyboard", settings.keyboard ? L"1" : L"0") &&
+        const bool written =
+            write(L"Filters", L"Keyboard", settings.keyboard ? L"1" : L"0") &&
             write(L"Filters", L"MouseButtons", settings.mouseButtons ? L"1" : L"0") &&
             write(L"Filters", L"MouseWheel", settings.mouseWheel ? L"1" : L"0") &&
             write(L"Filters", L"MouseMove", settings.mouseMove ? L"1" : L"0") &&
             write(L"History", L"Capacity", std::to_wstring(settings.historyCapacity)) &&
             write(L"Animation", L"FadeDurationMs", std::to_wstring(settings.animationDurationMs));
+        if (!written) return false;
+        // Profile API writes may be cached. Flush this file before reporting
+        // success so the UI does not activate settings that are only buffered.
+        return WritePrivateProfileStringW(nullptr, nullptr, nullptr, path.c_str()) != FALSE;
     }
 
 private:
