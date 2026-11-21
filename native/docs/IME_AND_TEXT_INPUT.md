@@ -4,7 +4,7 @@
 
 Keyviz Native registers keyboard and mouse Raw Input on one hidden top-level window. Raw Input reports physical key transitions and scan codes; it does not forward another process's IME composition string, candidate list, or committed text to this window. The current renderer therefore visualizes physical input, not arbitrary text entered into other applications.
 
-Keyboard-layout translation uses `ToUnicodeEx` with `TU_NO_STATE_CHANGE` (`0x4`) so looking up a key label does not consume or mutate the foreground layout's pending dead-key composition state. A negative `ToUnicodeEx` result identifies a dead key; the native label now exposes its printable accent with a `(dead)` suffix. Extended E0 and E1 scan-code prefixes are preserved for layout translation (including the special E1-prefixed key sequences).
+Keyboard-layout translation uses `ToUnicodeEx` with `TU_NO_STATE_CHANGE` (`0x4`) so looking up a key label does not consume or mutate the foreground layout's pending dead-key composition state. A negative `ToUnicodeEx` result identifies a dead key; the native label now exposes its printable accent with a `(dead)` suffix. Extended E0 and E1 scan-code prefixes are preserved for layout translation (including the special E1-prefixed key sequences). Translated Unicode labels are filtered for control code points without relying on the C runtime's locale-sensitive `iswprint`, so layouts producing CJK characters remain supported even when the process locale is still the default `C` locale.
 
 ## Options considered
 
