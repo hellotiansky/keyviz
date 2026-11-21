@@ -268,7 +268,7 @@ void invalidPersistenceMetadataDoesNotReplaceExistingHistory() {
         output.write(magic, sizeof(magic) - 1);
         const std::uint32_t count = 1;
         const std::uint32_t invalidType = 6;
-        output.write(magic, 0);
+        output.write(magic, sizeof(magic) - 1);
         output.write(reinterpret_cast<const char*>(&count), sizeof(count));
         output.write(reinterpret_cast<const char*>(&invalidType), sizeof(invalidType));
         assert(static_cast<bool>(output));
