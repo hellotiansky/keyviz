@@ -188,6 +188,26 @@ void removingAndReconnectingKeyboardResetsRepeatState() {
     InputCore::resetKeyboardState();
 }
 
+void arrivalResetsReusedKeyboardHandleWithoutAffectingOtherDevices() {
+    const HANDLE reconnected = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(42));
+    const HANDLE otherKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(43));
+    InputCore::resetKeyboardState();
+
+    decodeOne(VK_CONTROL, 0x1D, 0, reconnected);
+    decodeOne(VK_SHIFT, 0x2A, 0, otherKeyboard);
+
+    // Simulate a reused handle when the old removal notification was missed.
+    InputCore::handleDeviceChange(GIDC_ARRIVAL, reconnected);
+    const auto freshKey = decodeOne('L', 0x26, 0, reconnected);
+    assert(!freshKey.isRepeat);
+    assert(freshKey.chordLabel.find(L"Ctrl + ") != 0);
+    assert(freshKey.chordLabel.find(L"Shift + ") == 0);
+
+    decodeOne('L', 0x26, RI_KEY_BREAK, reconnected);
+    decodeOne(VK_SHIFT, 0x2A, RI_KEY_BREAK, otherKeyboard);
+    InputCore::resetKeyboardState();
+}
+
 void removingOneKeyboardPreservesOtherDeviceModifiers() {
     const HANDLE firstKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(1));
     const HANDLE secondKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(2));
@@ -317,6 +337,7 @@ int main() {
     releasingModifierOnOneKeyboardPreservesTheOtherDevice();
     removingOneKeyboardPreservesOtherDeviceModifiers();
     removingAndReconnectingKeyboardResetsRepeatState();
+    arrivalResetsReusedKeyboardHandleWithoutAffectingOtherDevices();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     keyboardTranslationPreservesExtendedScanCodePrefixes();
     invalidVirtualKeysAreIgnoredWithoutLosingHeldModifiers();
