@@ -292,7 +292,7 @@ private:
                 continue;
             const std::wstring row = std::to_wstring(now - event.timestamp) + L"," +
                 csvEscape(eventTypeLabel(event.type)) + L"," + csvEscape(event.label) + L"," +
-                csvEscape(event.chordLabel) + L"," + std::to_wstring(event.repeatCount) + L"\\r\\n";
+                csvEscape(event.chordLabel) + L"," + std::to_wstring(event.repeatCount) + L"\r\n";
             output << toUtf8(row);
         }
         if (!output) {
