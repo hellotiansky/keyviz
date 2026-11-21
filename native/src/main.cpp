@@ -687,9 +687,10 @@ private:
             DestroyWindow(hwnd);
             return false;
         }
+        // Keep replacement windows hidden until every monitor has been
+        // enumerated successfully. A later monitor failure can then roll back
+        // without briefly exposing an incomplete overlay set.
         overlays_.push_back(std::move(overlay));
-        ShowWindow(hwnd, SW_SHOWNOACTIVATE);
-        UpdateWindow(hwnd);
         return true;
     }
 
@@ -717,7 +718,14 @@ private:
             return false;
         }
 
-        // The complete new set is ready; now release the old windows/renderers.
+        // Publish the complete replacement set only after enumeration and
+        // every renderer/layered-window setup step has succeeded.
+        for (const auto& overlay : overlays_) {
+            ShowWindow(overlay->hwnd, SW_SHOWNOACTIVATE);
+            UpdateWindow(overlay->hwnd);
+        }
+
+        // The replacement set is visible; now release the old windows/renderers.
         for (auto& overlay : previousOverlays) {
             overlay->renderer.shutdown();
             if (IsWindow(overlay->hwnd)) DestroyWindow(overlay->hwnd);
