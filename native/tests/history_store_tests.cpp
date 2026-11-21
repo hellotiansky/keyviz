@@ -5,6 +5,7 @@
 #undef NDEBUG
 #endif
 #include <cassert>
+#include <cstdint>
 #include <cstddef>
 #include <utility>
 #include <filesystem>
@@ -125,6 +126,43 @@ void repeatedKeyDownsAreCoalesced() {
     assert(history.events().front().isRepeat);
 }
 
+void repeatedKeysFromDifferentKeyboardsAreNotMerged() {
+    const HANDLE firstKeyboard =
+        reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(101));
+    const HANDLE secondKeyboard =
+        reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(102));
+    HistoryStore history(8);
+
+    auto firstDown = keyEvent('A', 1);
+    firstDown.sourceDevice = firstKeyboard;
+    history.append(firstDown);
+
+    auto secondDown = keyEvent('A', 2);
+    secondDown.sourceDevice = secondKeyboard;
+    history.append(secondDown);
+
+    // A repeat from keyboard one must not be attributed to keyboard two's
+    // newer A press, even though the virtual key is identical.
+    auto firstRepeat = keyEvent('A', 3, true);
+    firstRepeat.sourceDevice = firstKeyboard;
+    history.append(firstRepeat);
+    assert(history.events().size() == 3);
+    assert(history.events()[0].sourceDevice == firstKeyboard);
+    assert(history.events()[0].repeatCount == 1);
+    assert(history.events()[1].sourceDevice == secondKeyboard);
+    assert(history.events()[1].repeatCount == 1);
+
+    // Subsequent adjacent repeats from keyboard one coalesce normally.
+    auto nextRepeat = keyEvent('A', 4, true);
+    nextRepeat.sourceDevice = firstKeyboard;
+    history.append(nextRepeat);
+    assert(history.events().size() == 3);
+    assert(history.events().front().sourceDevice == firstKeyboard);
+    assert(history.events().front().repeatCount == 2);
+    assert(history.events()[1].sourceDevice == secondKeyboard);
+    assert(history.events()[1].repeatCount == 1);
+}
+
 void persistenceRoundTripsEventsAndHonorsCapacity() {
     const auto path = (std::filesystem::temp_directory_path() /
         (L"keyviz-history-test-" + std::to_wstring(GetCurrentProcessId()) + L".bin")).wstring();
@@ -162,6 +200,7 @@ int main() {
     mouseMovementSamplesAreCoalesced();
     movementCoalescingPreservesInterveningActions();
     repeatedKeyDownsAreCoalesced();
+    repeatedKeysFromDifferentKeyboardsAreNotMerged();
     clearRemovesAllEvents();
     persistenceRoundTripsEventsAndHonorsCapacity();
     return 0;
