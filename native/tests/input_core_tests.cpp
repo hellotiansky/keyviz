@@ -202,6 +202,10 @@ void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     const wchar_t ordinary[] = L"e";
     assert(keyviz::translatedKeyLabel(1, ordinary, 1, L"Key E") == L"e");
 
+    // Unicode text must not depend on the process CRT locale.
+    const wchar_t japanese[] = L"あ";
+    assert(keyviz::translatedKeyLabel(1, japanese, 1, L"Key A") == L"あ");
+
     const wchar_t accent[] = L"^";
     assert(keyviz::translatedKeyLabel(-1, accent, 1, L"Dead key") == L"^ (dead)");
 
