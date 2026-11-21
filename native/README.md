@@ -41,9 +41,9 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - Input events are shared through one event engine and redrawn on every monitor overlay
 - Display resolution changes and device-tree notifications schedule a debounced (300 ms) overlay rebuild, covering monitor hot-plug and topology changes
 - Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation including E0-prefixed extended scan codes and visible dead-key accents, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
-- Mouse movement sampling with unified virtual-desktop cursor coordinates; the overlay labels desktop-absolute coordinates and active-monitor-local coordinates separately, including negative origins on left/upper displays
+- Mouse movement sampling capped at 20 Hz, with consecutive movement samples coalesced in history while button and wheel events remain distinct; unified virtual-desktop cursor coordinates are used and the overlay labels desktop-absolute coordinates and active-monitor-local coordinates separately, including negative origins on left/upper displays
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
-- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords, AltGr state mixed-DPI overlay geometry and virtual-desktop pointer coordinate formatting
+- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords, AltGr state, mixed-DPI overlay geometry virtual-desktop pointer coordinate formatting and mouse sampling cadence/tick-wraparound
 - Bounded event history with configurable 40/80/160/320-event retention
 - Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced and checkpointed every 30 seconds and on clean shutdown
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
