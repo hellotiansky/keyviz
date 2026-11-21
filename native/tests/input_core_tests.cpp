@@ -98,7 +98,7 @@ void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     const wchar_t accent[] = L"^";
     assert(keyviz::translatedKeyLabel(-1, accent, 1, L"Dead key") == L"^ (dead)");
 
-    const wchar_t nonPrintable[] = {L'\\n'};
+    const wchar_t nonPrintable[] = {L'\n'};
     assert(keyviz::translatedKeyLabel(1, nonPrintable, 1, L"Enter") == L"Enter");
     assert(keyviz::translatedKeyLabel(0, ordinary, 1, L"Key E") == L"Key E");
     assert(keyviz::translatedKeyLabel(-2, accent, 1, L"Dead key") == L"Dead key");
