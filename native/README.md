@@ -38,7 +38,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - A single hidden top-level input window owns keyboard and mouse Raw Input registration
 - Input events are shared through one event engine and redrawn on every monitor overlay
 - Display topology changes trigger overlay teardown and recreation
-- Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation including E0-prefixed extended scan codes, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
+- Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation including E0-prefixed extended scan codes and visible dead-key accents, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords and AltGr state
@@ -60,12 +60,12 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
 - Overlay fade timing is configurable; richer animation styles and easing remain future work.
 - A sudden power loss or forced process termination can lose events recorded since the last 30-second history checkpoint.
-- Full IME composition, dead-key presentation, and exhaustive keyboard-layout edge cases remain future work.
+- Global IME composition and committed-text capture are intentionally not implemented; see `native/docs/IME_AND_TEXT_INPUT.md` for the architecture and privacy assessment. Dead-key accents are labeled, but locale-specific sequences still need physical-device validation.
 - Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
 ## Next milestones
-1. Improve edge cases in modifier and keyboard-layout handling; expand animation styles.
+1. Validate dead-key and keyboard-layout behavior on physical Windows systems; expand animation styles.
 2. Investigate a separate, opt-in text-input integration for IME-committed text and richer history navigation.
 3. Add a branded application icon and complete physical-device validation.
 
