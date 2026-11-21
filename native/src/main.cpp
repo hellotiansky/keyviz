@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <shellapi.h>
+#include <dbt.h>
 #include "keyviz/input_core.h"
 #include "keyviz/input_event.h"
 #include "keyviz/event_engine.h"
@@ -31,6 +32,8 @@ constexpr int kSettingsHotkeyId = 1;
 constexpr int kHistoryHotkeyId = 2;
 constexpr UINT_PTR kRedrawTimerId = 2;
 constexpr UINT_PTR kHistorySaveTimerId = 3;
+constexpr UINT_PTR kDisplayRebuildTimerId = 4;
+constexpr UINT kDisplayRebuildDelayMs = 300;
 constexpr UINT kTrayCallbackMessage = WM_APP + 1;
 constexpr UINT kTraySettingsCommand = 401;
 constexpr UINT kTrayHistoryCommand = 402;
@@ -635,6 +638,12 @@ private:
         return true;
     }
 
+    void scheduleDisplayRebuild() noexcept {
+        if (inputWindow_)
+            SetTimer(inputWindow_, kDisplayRebuildTimerId,
+                kDisplayRebuildDelayMs, nullptr);
+    }
+
     bool rebuildOverlays() {
         for (auto& overlay : overlays_) {
             overlay->renderer.shutdown();
@@ -678,6 +687,7 @@ private:
             removeTrayIcon();
             KillTimer(inputWindow_, kRedrawTimerId);
             KillTimer(inputWindow_, kHistorySaveTimerId);
+            KillTimer(inputWindow_, kDisplayRebuildTimerId);
             UnregisterHotKey(inputWindow_, kSettingsHotkeyId);
             UnregisterHotKey(inputWindow_, kHistoryHotkeyId);
         }
@@ -755,11 +765,18 @@ private:
             } else if (isInputWindow && wParam == kHistorySaveTimerId) {
                 if (!self->historyPath_.empty())
                     HistoryPersistence::save(self->historyPath_, self->engine_.history());
+            } else if (isInputWindow && wParam == kDisplayRebuildTimerId) {
+                KillTimer(hwnd, kDisplayRebuildTimerId);
+                self->rebuildOverlays();
             }
             return 0;
         case WM_DISPLAYCHANGE:
-            if (isInputWindow) self->rebuildOverlays();
+            if (isInputWindow) self->scheduleDisplayRebuild();
             return 0;
+        case WM_DEVICECHANGE:
+            if (isInputWindow && wParam == DBT_DEVNODES_CHANGED)
+                self->scheduleDisplayRebuild();
+            return TRUE;
         case WM_DESTROY:
             if (isInputWindow) PostQuitMessage(0);
             return 0;
