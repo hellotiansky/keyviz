@@ -33,6 +33,10 @@ if(MSVC)
     target_compile_options(KeyvizNative PRIVATE /W4 /permissive- /EHsc /utf-8)
 endif()
 
+install(TARGETS KeyvizNative
+    RUNTIME DESTINATION .
+)
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(HistoryStoreTests
