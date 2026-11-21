@@ -26,7 +26,7 @@
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
 - Completed: key translation now uses the app's tracked Raw Input modifier state (including left/right modifiers and AltGr state)
-- Completed: E0 extended scan-code prefix is passed to keyboard-layout translation
+- Completed: E0 and E1 extended scan-code prefixes are passed to keyboard-layout translation, with CTest coverage for standard, E0 and E1 scan codes
 - Completed: printable dead-key accents are surfaced with a `(dead)` label without consuming layout composition state
 - Completed: keyboard translation label formatting is isolated and unit-tested for printable output, dead-key accents, non-printable fallback, null buffers and oversized translation lengths
 - Documented: IME integration options and privacy boundary in `native/docs/IME_AND_TEXT_INPUT.md`
