@@ -56,11 +56,15 @@ void mouseMovementSamplesAreCoalesced() {
     InputEvent second = first;
     second.screenX = 30;
     second.screenY = 40;
+    second.timestamp = 150;
+    second.wallClockMs = 1700000000123ull;
     history.append(second);
 
     assert(history.events().size() == 1);
     assert(history.events().front().screenX == 30);
     assert(history.events().front().screenY == 40);
+    assert(history.events().front().timestamp == 150);
+    assert(history.events().front().wallClockMs == 1700000000123ull);
 }
 
 void movementCoalescingPreservesInterveningActions() {
