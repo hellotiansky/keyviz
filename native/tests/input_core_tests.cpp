@@ -198,6 +198,14 @@ void keyboardTranslationPreservesExtendedScanCodePrefixes() {
     assert(keyviz::keyboardTranslationScanCode(0x45, false, true) == 0xE145);
 }
 
+void pauseAndPrintScreenUseStablePhysicalLabels() {
+    const auto pause = decodeOne(VK_PAUSE, 0x45, RI_KEY_E1);
+    assert(pause.label == L"Pause");
+
+    const auto printScreen = decodeOne(VK_SNAPSHOT, 0x37, RI_KEY_E0);
+    assert(printScreen.label == L"Print Screen");
+}
+
 void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     const wchar_t ordinary[] = L"e";
     assert(keyviz::translatedKeyLabel(1, ordinary, 1, L"Key E") == L"e");
@@ -238,5 +246,6 @@ int main() {
     removingOneKeyboardPreservesOtherDeviceModifiers();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     keyboardTranslationPreservesExtendedScanCodePrefixes();
+    pauseAndPrintScreenUseStablePhysicalLabels();
     return 0;
 }
