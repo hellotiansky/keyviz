@@ -72,10 +72,16 @@ std::wstring InputCore::localizedKeyName(const RAWKEYBOARD& key) {
     HKL layout = GetKeyboardLayout(threadId);
 
     BYTE state[256]{};
+    // Use the Raw Input state tracked by this process rather than sampling the
+    // foreground thread's asynchronous state. This keeps background capture and
+    // AltGr/left-right modifier translation consistent with the captured stream.
     for (int code = 0; code < 256; ++code) {
-        if (GetAsyncKeyState(code) & 0x8000) state[code] |= 0x80;
+        if (pressedKeys_[code]) state[code] |= 0x80;
     }
-    // Preserve toggle state while taking the down-state from the physical keyboard.
+    state[VK_SHIFT] = (state[VK_LSHIFT] || state[VK_RSHIFT]) ? 0x80 : 0;
+    state[VK_CONTROL] = (state[VK_LCONTROL] || state[VK_RCONTROL]) ? 0x80 : 0;
+    state[VK_MENU] = (state[VK_LMENU] || state[VK_RMENU]) ? 0x80 : 0;
+    // Preserve toggle state from Windows while keeping physical modifiers local.
     for (const int toggleKey : {VK_CAPITAL, VK_NUMLOCK, VK_SCROLL}) {
         if (GetKeyState(toggleKey) & 1) state[toggleKey] |= 1;
     }
