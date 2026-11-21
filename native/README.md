@@ -38,10 +38,10 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - A single hidden top-level input window owns keyboard and mouse Raw Input registration
 - Input events are shared through one event engine and redrawn on every monitor overlay
 - Display topology changes trigger overlay teardown and recreation
-- Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
+- Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation including E0-prefixed extended scan codes, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
-- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, and persistence round-trips
+- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords and AltGr state
 - Bounded event history with configurable 40/80/160/320-event retention
 - Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced and checkpointed every 30 seconds and on clean shutdown
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
