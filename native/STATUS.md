@@ -14,7 +14,8 @@
 - Completed: CTest coverage for history capacity, resizing, clearing, event coalescing and persistence round-trips
 - Completed: versioned, bounded event-history persistence with atomic file replacement, 30-second checkpoints and shutdown save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
-- In progress: robust keyboard layout/modifier handling and configurable animation
+- Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
+- In progress: additional keyboard layout/modifier edge cases and richer animation styles
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
 - Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
 - Completed: embedded Windows file/product version metadata for the native executable
