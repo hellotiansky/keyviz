@@ -27,6 +27,7 @@
 - Completed: Raw Input keyboard removal erases only the matching per-device state entry without querying potentially invalid device metadata; tests cover unrelated arrivals and releases on one keyboard while another still holds the same modifier and a reconnect/reused-handle press starting a fresh repeat sequence
 - Completed: InputCore test verifies modifier reset clears stale chord state after keyboard removal
 - Completed: capture start/stop resets tracked keyboard modifiers and mouse sampling baselines; CTest covers stop-time reset across multiple keyboard devices
+- Completed: Raw Input capture start rejects null or destroyed sink HWNDs, stops any prior active session before restart, and unregisters both keyboard and mouse usages if combined registration fails
 - Completed: keyboard repeat detection is isolated per Raw Input device; CTest covers independent initial presses, repeats and release/re-press sequences
 - Completed: decoded keyboard events retain their runtime Raw Input device identity so history repeat coalescing cannot attribute one keyboard's repeats to another keyboard; CTest covers interleaved same-key presses across devices
 - Completed: settings and history persistence reject missing/empty `LOCALAPPDATA` instead of falling back to a relative working-directory path; CTest covers the missing-environment case
