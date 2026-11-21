@@ -11,9 +11,11 @@
 - Completed: InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - Completed: native settings window, persisted event filters and configurable 40/80/160/320-event history capacity
 - Completed: searchable/filterable history browser, event counts, empty states and filtered UTF-8 CSV export
-- Completed: CTest coverage for history capacity, resizing, clearing and event coalescing
+- Completed: CTest coverage for history capacity, resizing, clearing, event coalescing and persistence round-trips
+- Completed: versioned, bounded event-history persistence with atomic file replacement, 30-second checkpoints and shutdown save
 - In progress: robust keyboard layout/modifier handling and configurable animation
-- Next: durable event-history persistence, tray integration and installer packaging
+- Persistence limitation: forced termination can lose events since the last 30-second checkpoint
+- Next: tray integration and installer packaging
 - Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
 
 The original Tauri application remains intact on the base branch.
