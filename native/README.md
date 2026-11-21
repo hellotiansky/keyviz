@@ -34,20 +34,21 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Native input history window; Ctrl+Shift+H shortcut
 - History search with case-insensitive key/chord matching and event-type filters
 - History result count and explicit empty/no-match states
+- UTF-8 CSV export of the current filtered history view
 - Independent Direct2D HWND render target and DirectWrite renderer per display
 - Event-driven 16 ms redraw timer with a short fade-out window
 
 ## Known limitations
 - Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
 - Animation is a basic event fade, not yet configurable.
-- Settings persistence and filter editor are implemented; history search/filtering is available, but export and long-term history persistence are not implemented.
+- Settings persistence and filter editor are implemented; history search/filtering is available, but long-term history persistence is not implemented.
 - Full keyboard layout/IME and modifier-state semantics remain to be implemented.
 - Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
 ## Next milestones
 1. Add robust modifier/keyboard-layout handling and configurable animation.
-2. Add history export, configurable retention and richer history navigation.
+2. Add configurable history retention and richer history navigation.
 3. Add tray integration and installer packaging.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
