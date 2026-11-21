@@ -63,6 +63,50 @@ void mouseMovementSamplesAreCoalesced() {
     assert(history.events().front().screenY == 40);
 }
 
+void movementCoalescingPreservesInterveningActions() {
+    HistoryStore history(8);
+    InputEvent move{};
+    move.type = InputEvent::Type::MouseMove;
+    move.screenX = -120;
+    move.screenY = 40;
+    history.append(move);
+
+    InputEvent click{};
+    click.type = InputEvent::Type::MouseDown;
+    click.label = L"Left";
+    history.append(click);
+
+    InputEvent afterClick = move;
+    afterClick.screenX = -80;
+    afterClick.screenY = 60;
+    history.append(afterClick);
+
+    InputEvent latest = afterClick;
+    latest.screenX = -20;
+    latest.screenY = 90;
+    history.append(latest);
+
+    assert(history.events().size() == 3);
+    assert(history.events()[0].type == InputEvent::Type::MouseMove);
+    assert(history.events()[0].screenX == -20);
+    assert(history.events()[1].type == InputEvent::Type::MouseDown);
+    assert(history.events()[2].type == InputEvent::Type::MouseMove);
+    assert(history.events()[2].screenX == -120);
+
+    InputEvent wheel{};
+    wheel.type = InputEvent::Type::Wheel;
+    wheel.label = L"Wheel Up";
+    history.append(wheel);
+    InputEvent afterWheel = latest;
+    afterWheel.screenX = 15;
+    history.append(afterWheel);
+
+    assert(history.events().size() == 5);
+    assert(history.events()[0].type == InputEvent::Type::MouseMove);
+    assert(history.events()[1].type == InputEvent::Type::Wheel);
+    assert(history.events()[2].type == InputEvent::Type::MouseMove);
+}
+
 void repeatedKeyDownsAreCoalesced() {
     HistoryStore history(4);
     history.append(keyEvent('A', 1));
@@ -112,6 +156,7 @@ void clearRemovesAllEvents() {
 int main() {
     capacityIsBoundedAndCanBeChanged();
     mouseMovementSamplesAreCoalesced();
+    movementCoalescingPreservesInterveningActions();
     repeatedKeyDownsAreCoalesced();
     clearRemovesAllEvents();
     persistenceRoundTripsEventsAndHonorsCapacity();
