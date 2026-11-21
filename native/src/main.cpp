@@ -774,9 +774,11 @@ private:
             if (isInputWindow) self->scheduleDisplayRebuild();
             return 0;
         case WM_DEVICECHANGE:
-            if (isInputWindow && wParam == DBT_DEVNODES_CHANGED)
+            if (isInputWindow && wParam == DBT_DEVNODES_CHANGED) {
                 self->scheduleDisplayRebuild();
-            return TRUE;
+                return TRUE;
+            }
+            break;
         case WM_DESTROY:
             if (isInputWindow) PostQuitMessage(0);
             return 0;
