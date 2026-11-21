@@ -205,12 +205,19 @@ void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     // Unicode text must not depend on the process CRT locale.
     const wchar_t japanese[] = L"あ";
     assert(keyviz::translatedKeyLabel(1, japanese, 1, L"Key A") == L"あ");
+    
+    // UTF-16 surrogate pairs are valid text and must pass through unchanged.
+    const wchar_t supplementary[] = {static_cast<wchar_t>(0xD83D), static_cast<wchar_t>(0xDE00)};
+    assert(keyviz::translatedKeyLabel(2, supplementary, 2, L"Fallback") ==
+        std::wstring(supplementary, supplementary + 2));
 
     const wchar_t accent[] = L"^";
     assert(keyviz::translatedKeyLabel(-1, accent, 1, L"Dead key") == L"^ (dead)");
 
     const wchar_t nonPrintable[] = {L'\n'};
     assert(keyviz::translatedKeyLabel(1, nonPrintable, 1, L"Enter") == L"Enter");
+    const wchar_t c1Control[] = {static_cast<wchar_t>(0x0085)};
+    assert(keyviz::translatedKeyLabel(1, c1Control, 1, L"Fallback") == L"Fallback");
     assert(keyviz::translatedKeyLabel(0, ordinary, 1, L"Key E") == L"Key E");
     assert(keyviz::translatedKeyLabel(-2, accent, 1, L"Dead key") == L"Dead key");
     assert(keyviz::translatedKeyLabel(1, nullptr, 1, L"Missing") == L"Missing");
