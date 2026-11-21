@@ -1,5 +1,6 @@
 #include "keyviz/input_core.h"
 #include "keyviz/keyboard_translation.h"
+#include "keyviz/mouse_wheel.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -253,6 +254,20 @@ void keyboardOverrunClearsUnreliableDeviceState() {
     InputCore::resetKeyboardState();
 }
 
+void mouseWheelDirectionsRejectZeroDelta() {
+    using keyviz::mouseWheelLabel;
+    assert(std::wstring(mouseWheelLabel(120, false)) == L"Wheel Up");
+    assert(std::wstring(mouseWheelLabel(-120, false)) == L"Wheel Down");
+    assert(std::wstring(mouseWheelLabel(120, true)) == L"Wheel Right");
+    assert(std::wstring(mouseWheelLabel(-120, true)) == L"Wheel Left");
+    assert(mouseWheelLabel(0, false) == nullptr);
+    assert(mouseWheelLabel(0, true) == nullptr);
+
+    // SHORT conversion preserves the signed direction encoded in USHORT data.
+    assert(std::wstring(mouseWheelLabel(static_cast<SHORT>(0x8000u), false)) ==
+        L"Wheel Down");
+}
+
 void pauseAndPrintScreenUseStablePhysicalLabels() {
     const auto pause = decodeOne(VK_PAUSE, 0x45, RI_KEY_E1);
     assert(pause.label == L"Pause");
@@ -304,6 +319,7 @@ int main() {
     keyboardTranslationPreservesExtendedScanCodePrefixes();
     invalidVirtualKeysAreIgnoredWithoutLosingHeldModifiers();
     keyboardOverrunClearsUnreliableDeviceState();
+    mouseWheelDirectionsRejectZeroDelta();
     pauseAndPrintScreenUseStablePhysicalLabels();
     return 0;
 }
