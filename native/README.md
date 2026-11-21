@@ -25,7 +25,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 The repository includes an Inno Setup definition at `installer/keyviz-native.iss`. On a Windows x64 build machine with Inno Setup 6 installed, build the native executable first, then run:
 
 ```powershell
-& "$env:ProgramFiles(x86)\\Inno Setup 6\\ISCC.exe" installer/keyviz-native.iss
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer/keyviz-native.iss
 ```
 
 The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe`. It installs under `%LOCALAPPDATA%\\Programs\\Keyviz Native`, adds a Start Menu shortcut, optionally creates a desktop shortcut, and offers to launch the app after setup. It does not configure automatic startup. The uninstaller is registered through Windows Apps settings.
