@@ -167,6 +167,24 @@ void releasingModifierOnOneKeyboardPreservesTheOtherDevice() {
     InputCore::resetKeyboardState();
 }
 
+void removingAndReconnectingKeyboardResetsRepeatState() {
+    const HANDLE keyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(41));
+    InputCore::resetKeyboardState();
+
+    const auto initialDown = decodeOne('A', 0x1E, 0, keyboard);
+    assert(!initialDown.isRepeat);
+
+    // Removal discards the device's held-key map. A later arrival/press must
+    // start a fresh sequence even if Windows reuses the opaque handle value.
+    InputCore::handleDeviceChange(GIDC_REMOVAL, keyboard);
+    InputCore::handleDeviceChange(GIDC_ARRIVAL, keyboard);
+    const auto reconnectedDown = decodeOne('A', 0x1E, 0, keyboard);
+    assert(!reconnectedDown.isRepeat);
+
+    decodeOne('A', 0x1E, RI_KEY_BREAK, keyboard);
+    InputCore::resetKeyboardState();
+}
+
 void removingOneKeyboardPreservesOtherDeviceModifiers() {
     const HANDLE firstKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(1));
     const HANDLE secondKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(2));
@@ -244,6 +262,7 @@ int main() {
     repeatedKeysAreTrackedIndependentlyPerKeyboard();
     releasingModifierOnOneKeyboardPreservesTheOtherDevice();
     removingOneKeyboardPreservesOtherDeviceModifiers();
+    removingAndReconnectingKeyboardResetsRepeatState();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     keyboardTranslationPreservesExtendedScanCodePrefixes();
     pauseAndPrintScreenUseStablePhysicalLabels();
