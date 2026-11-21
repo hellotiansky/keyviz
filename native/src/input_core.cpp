@@ -87,7 +87,9 @@ std::wstring InputCore::localizedKeyName(const RAWKEYBOARD& key) {
     }
 
     wchar_t translated[8]{};
-    const UINT scanCode = key.MakeCode;
+    // ToUnicodeEx expects the E0 prefix in the high byte for extended keys.
+    const UINT scanCode = static_cast<UINT>(key.MakeCode) |
+        ((key.Flags & RI_KEY_E0) ? 0xE000u : 0u);
     // Flag 0x4 asks Windows not to mutate the keyboard buffer's dead-key state.
     const int length = ToUnicodeEx(vk, scanCode, state, translated,
         static_cast<int>(std::size(translated)), 0x4, layout);
