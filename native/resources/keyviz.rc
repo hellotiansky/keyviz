@@ -1,5 +1,7 @@
 #include <windows.h>
 
+101 ICON "keyviz.ico"
+
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 0,2,0,0
  PRODUCTVERSION 0,2,0,0
