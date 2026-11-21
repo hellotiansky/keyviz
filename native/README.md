@@ -30,7 +30,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - Bounded in-memory event history with configurable 40/80/160/320-event retention
-- History retention preference persisted in `%LOCALAPPDATA%\\Keyviz\\settings.ini`
+- History retention preference persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
 - Native Win32 settings window; Ctrl+Shift+K shortcut
 - Native input history window; Ctrl+Shift+H shortcut
 - History search with case-insensitive key/chord matching and event-type filters
