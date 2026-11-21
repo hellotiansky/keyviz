@@ -143,6 +143,30 @@ void repeatedKeysAreTrackedIndependentlyPerKeyboard() {
 }
 
 
+void releasingModifierOnOneKeyboardPreservesTheOtherDevice() {
+    const HANDLE firstKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(31));
+    const HANDLE secondKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(32));
+    InputCore::resetKeyboardState();
+
+    decodeOne(VK_CONTROL, 0x1D, 0, firstKeyboard);
+    decodeOne(VK_CONTROL, 0x1D, 0, secondKeyboard);
+
+    // Arrival notifications must not disturb modifiers already held.
+    InputCore::handleDeviceChange(GIDC_ARRIVAL,
+        reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(33)));
+    decodeOne(VK_CONTROL, 0x1D, RI_KEY_BREAK, firstKeyboard);
+
+    const auto stillControlled = decodeOne('H', 0x23, 0, secondKeyboard);
+    assert(stillControlled.chordLabel.find(L"Ctrl + ") == 0);
+
+    decodeOne('H', 0x23, RI_KEY_BREAK, secondKeyboard);
+    decodeOne(VK_CONTROL, 0x1D, RI_KEY_BREAK, secondKeyboard);
+    const auto released = decodeOne('J', 0x24, 0, secondKeyboard);
+    assert(released.chordLabel.find(L"Ctrl + ") != 0);
+    decodeOne('J', 0x24, RI_KEY_BREAK, secondKeyboard);
+    InputCore::resetKeyboardState();
+}
+
 void removingOneKeyboardPreservesOtherDeviceModifiers() {
     const HANDLE firstKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(1));
     const HANDLE secondKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(2));
@@ -193,6 +217,7 @@ int main() {
     resettingKeyboardStateClearsStaleModifiers();
     stoppingCaptureClearsTrackedModifiers();
     repeatedKeysAreTrackedIndependentlyPerKeyboard();
+    releasingModifierOnOneKeyboardPreservesTheOtherDevice();
     removingOneKeyboardPreservesOtherDeviceModifiers();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     return 0;
