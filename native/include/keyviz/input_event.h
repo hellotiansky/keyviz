@@ -1,5 +1,6 @@
 #pragma once
 #include <windows.h>
+#include <cstdint>
 #include <string>
 namespace keyviz {
 struct InputEvent {
@@ -7,6 +8,7 @@ struct InputEvent {
     Type type{};
     std::wstring label;
     DWORD timestamp{};
+    std::uint64_t wallClockMs{};
     LONG screenX{};
     LONG screenY{};
     USHORT virtualKey{};
