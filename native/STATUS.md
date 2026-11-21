@@ -25,7 +25,8 @@
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
 - Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
 - Completed: embedded Windows file/product version metadata for the native executable
-- Next: application icon and physical-device validation, including dead-key and IME coexistence
+- Completed: branded multi-size Windows icon generated reproducibly from PowerShell and embedded in the executable and notification-area icon
+- Next: physical-device validation, including dead-key and IME coexistence
 - Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
 
 The original Tauri application remains intact on the base branch.
