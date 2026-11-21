@@ -30,7 +30,7 @@
 - Completed: printable dead-key accents are surfaced with a `(dead)` label without consuming layout composition state
 - Completed: keyboard translation label formatting is locale-independent and unit-tested for ASCII/CJK text, UTF-16 surrogate pairs, control-character fallback, dead-key accents, null buffers and oversized translation lengths
 - Documented: IME integration options and privacy boundary in `native/docs/IME_AND_TEXT_INPUT.md`
-- In progress: locale-specific dead-key sequences, remaining keyboard-layout edge cases and richer animation styles
+- In progress: physical validation of foreground-thread layout switching, dead-key composition preservation, no-foreground fallback, AltGr and E0/E1 keys; richer animation styles
 - IME limitation: global composition and committed-text capture remain intentionally unsupported; do not read arbitrary foreground document text or inject hooks into other processes
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
 - Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
