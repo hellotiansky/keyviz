@@ -48,7 +48,7 @@ public:
         hwnd_ = CreateWindowExW(WS_EX_APPWINDOW, kSettingsClass,
             L"Keyviz Native - Settings",
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-            CW_USEDEFAULT, CW_USEDEFAULT, 460, 300,
+            CW_USEDEFAULT, CW_USEDEFAULT, 460, 330,
             nullptr, nullptr, instance, this);
         return hwnd_ != nullptr;
     }
@@ -61,7 +61,8 @@ private:
     enum : int {
         kKeyboardFilterId = 201, kMouseButtonsFilterId = 202,
         kWheelFilterId = 203, kMouseMoveFilterId = 204,
-        kApplyId = 205, kHideId = 206, kClearHistoryId = 207
+        kApplyId = 205, kHideId = 206, kClearHistoryId = 207,
+        kHistoryCapacityId = 208
     };
 
     static void createCheckBox(HWND hwnd, HINSTANCE instance,
@@ -100,16 +101,32 @@ private:
                 self->settings_.mouseWheel);
             createCheckBox(hwnd, instance, L"Mouse movement", kMouseMoveFilterId, 142,
                 self->settings_.mouseMove);
+            CreateWindowExW(0, L"STATIC", L"Maximum events kept in history:",
+                WS_CHILD | WS_VISIBLE, 22, 180, 220, 22,
+                hwnd, nullptr, instance, nullptr);
+            HWND capacity = CreateWindowExW(0, L"COMBOBOX", nullptr,
+                WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST,
+                250, 176, 150, 120, hwnd,
+                reinterpret_cast<HMENU>(static_cast<INT_PTR>(kHistoryCapacityId)),
+                instance, nullptr);
+            const wchar_t* capacities[] = {L"40 events", L"80 events",
+                L"160 events", L"320 events"};
+            for (const auto* option : capacities)
+                SendMessageW(capacity, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(option));
+            const int selectedCapacity = self->settings_.historyCapacity == 40 ? 0 :
+                self->settings_.historyCapacity == 160 ? 2 :
+                self->settings_.historyCapacity == 320 ? 3 : 1;
+            SendMessageW(capacity, CB_SETCURSEL, selectedCapacity, 0);
             CreateWindowExW(0, L"BUTTON", L"Apply",
-                WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 22, 195, 100, 30,
+                WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 22, 230, 100, 30,
                 hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kApplyId)),
                 instance, nullptr);
             CreateWindowExW(0, L"BUTTON", L"Hide",
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 134, 195, 100, 30,
+                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 134, 230, 100, 30,
                 hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kHideId)),
                 instance, nullptr);
             CreateWindowExW(0, L"BUTTON", L"Clear history",
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 246, 195, 130, 30,
+                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 246, 230, 130, 30,
                 hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kClearHistoryId)),
                 instance, nullptr);
             return 0;
@@ -121,6 +138,11 @@ private:
                 next.mouseButtons = IsDlgButtonChecked(hwnd, kMouseButtonsFilterId) == BST_CHECKED;
                 next.mouseWheel = IsDlgButtonChecked(hwnd, kWheelFilterId) == BST_CHECKED;
                 next.mouseMove = IsDlgButtonChecked(hwnd, kMouseMoveFilterId) == BST_CHECKED;
+                const LRESULT capacity = SendDlgItemMessageW(hwnd, kHistoryCapacityId,
+                    CB_GETCURSEL, 0, 0);
+                constexpr std::size_t capacities[] = {40, 80, 160, 320};
+                if (capacity >= 0 && capacity < 4)
+                    next.historyCapacity = capacities[capacity];
                 if (self->onApply_) self->onApply_(next);
                 return 0;
             }
@@ -445,6 +467,7 @@ public:
         if (!settings_.create(instance_, initialFilters, [this](const FilterSettings& filters) {
                 if (settingsStore_.save(filters)) {
                     engine_.setFilterSettings(filters);
+                    engine_.setHistoryCapacity(filters.historyCapacity);
                 } else {
                     MessageBoxW(inputWindow_, L"Could not save settings.",
                         kAppName, MB_ICONWARNING | MB_OK);
