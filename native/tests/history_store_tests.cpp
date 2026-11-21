@@ -66,11 +66,14 @@ void mouseMovementSamplesAreCoalesced() {
 void repeatedKeyDownsAreCoalesced() {
     HistoryStore history(4);
     history.append(keyEvent('A', 1));
-    history.append(keyEvent('A', 2, true));
+    auto repeat = keyEvent('A', 2, true);
+    repeat.wallClockMs = 200;
+    history.append(repeat);
 
     assert(history.events().size() == 1);
     assert(history.events().front().repeatCount == 2);
     assert(history.events().front().timestamp == 2);
+    assert(history.events().front().wallClockMs == 200);
     assert(history.events().front().isRepeat);
 }
 
