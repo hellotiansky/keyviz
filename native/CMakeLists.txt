@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(KeyvizNative VERSION 0.2.0 LANGUAGES CXX)
+project(KeyvizNative VERSION 0.2.0 LANGUAGES CXX RC)
 
 if(NOT WIN32)
     message(FATAL_ERROR "KeyvizNative currently supports Windows only.")
@@ -10,6 +10,7 @@ add_executable(KeyvizNative WIN32
     src/input_core.cpp
     src/event_engine.cpp
     src/renderer.cpp
+    resources/keyviz.rc
 )
 
 target_include_directories(KeyvizNative PRIVATE include)
