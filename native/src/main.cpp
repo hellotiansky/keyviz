@@ -614,16 +614,31 @@ private:
         const RECT work = info.rcWork;
         const int workWidth = work.right - work.left;
         const int workHeight = work.bottom - work.top;
-        const int width = std::max(1, std::min(kOverlayWidth, workWidth - 40));
-        const int height = std::max(1, std::min(kOverlayHeight, workHeight - 20));
-        const int x = work.left + (workWidth - width) / 2;
-        const int y = work.bottom - height - kOverlayBottomMargin;
-
+        // Create the window on its target monitor first so Windows assigns
+        // that monitor's effective DPI before we calculate physical pixels.
+        const int anchorX = work.left + workWidth / 2;
+        const int anchorY = work.top + workHeight / 2;
         HWND hwnd = CreateWindowExW(
             WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
-            kOverlayClass, kAppName, WS_POPUP, x, y, width, height,
+            kOverlayClass, kAppName, WS_POPUP, anchorX, anchorY, 1, 1,
             nullptr, nullptr, instance_, this);
         if (!hwnd) return false;
+
+        const UINT dpi = std::max<UINT>(96, GetDpiForWindow(hwnd));
+        const int logicalWorkWidth = MulDiv(workWidth, 96, static_cast<int>(dpi));
+        const int logicalWorkHeight = MulDiv(workHeight, 96, static_cast<int>(dpi));
+        const int logicalWidth = std::max(1, std::min(kOverlayWidth, logicalWorkWidth - 40));
+        const int logicalHeight = std::max(1, std::min(kOverlayHeight, logicalWorkHeight - 20));
+        const int width = MulDiv(logicalWidth, static_cast<int>(dpi), 96);
+        const int height = MulDiv(logicalHeight, static_cast<int>(dpi), 96);
+        const int margin = MulDiv(kOverlayBottomMargin, static_cast<int>(dpi), 96);
+        const int x = work.left + (workWidth - width) / 2;
+        const int y = work.bottom - height - margin;
+        if (!SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height,
+                SWP_NOACTIVATE)) {
+            DestroyWindow(hwnd);
+            return false;
+        }
 
         auto overlay = std::make_unique<OverlayWindow>();
         overlay->hwnd = hwnd;
@@ -770,6 +785,12 @@ private:
                 self->rebuildOverlays();
             }
             return 0;
+        case WM_DPICHANGED:
+            if (!isInputWindow && self->findOverlay(hwnd)) {
+                self->scheduleDisplayRebuild();
+                return 0;
+            }
+            break;
         case WM_DISPLAYCHANGE:
             if (isInputWindow) self->scheduleDisplayRebuild();
             return 0;
