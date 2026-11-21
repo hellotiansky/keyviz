@@ -38,7 +38,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - A single hidden top-level input window owns keyboard and mouse Raw Input registration
 - Input events are shared through one event engine and redrawn on every monitor overlay
 - Display topology changes trigger overlay teardown and recreation
-- Normalized key press/release, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
+- Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, and persistence round-trips
@@ -60,7 +60,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
 - Overlay fade timing is configurable; richer animation styles and easing remain future work.
 - A sudden power loss or forced process termination can lose events recorded since the last 30-second history checkpoint.
-- Full keyboard layout/IME and modifier-state semantics remain to be implemented.
+- Full IME composition, dead-key presentation, and exhaustive keyboard-layout edge cases remain future work.
 - Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
