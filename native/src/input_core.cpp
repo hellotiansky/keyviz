@@ -99,7 +99,18 @@ std::wstring InputCore::localizedKeyName(const RAWKEYBOARD& key) {
         }
         return std::wstring(translated, translated + length);
     }
-    // Dead keys and non-printable keys retain their descriptive virtual-key name.
+    if (length < 0) {
+        // ToUnicodeEx returns a negative count for a dead key. With
+        // TU_NO_STATE_CHANGE set, this reports the accent without consuming
+        // or altering the keyboard layout's pending composition state.
+        const int deadLength = -length;
+        bool printable = deadLength > 0;
+        for (int i = 0; i < deadLength; ++i)
+            printable = printable && iswprint(translated[i]);
+        if (printable)
+            return std::wstring(translated, translated + deadLength) + L" (dead)";
+    }
+    // Non-printable keys retain their descriptive virtual-key name.
     return keyName(key);
 }
 std::wstring InputCore::keyName(const RAWKEYBOARD& key) {
