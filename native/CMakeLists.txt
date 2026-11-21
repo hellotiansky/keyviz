@@ -105,4 +105,20 @@ if(BUILD_TESTING)
         target_compile_options(PointerCoordinatesTests PRIVATE /W4 /permissive- /EHsc /utf-8)
     endif()
     add_test(NAME PointerCoordinatesTests COMMAND PointerCoordinatesTests)
+
+    add_executable(MouseSamplingTests
+        tests/mouse_sampling_tests.cpp
+    )
+    target_include_directories(MouseSamplingTests PRIVATE include)
+    target_compile_features(MouseSamplingTests PRIVATE cxx_std_20)
+    target_compile_definitions(MouseSamplingTests PRIVATE
+        UNICODE
+        _UNICODE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+    )
+    if(MSVC)
+        target_compile_options(MouseSamplingTests PRIVATE /W4 /permissive- /EHsc /utf-8)
+    endif()
+    add_test(NAME MouseSamplingTests COMMAND MouseSamplingTests)
 endif()
