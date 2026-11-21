@@ -29,7 +29,7 @@
 - Completed: keyboard repeat detection is isolated per Raw Input device; CTest covers independent initial presses, repeats and release/re-press sequences
 - Completed: decoded keyboard events retain their runtime Raw Input device identity so history repeat coalescing cannot attribute one keyboard's repeats to another keyboard; CTest covers interleaved same-key presses across devices
 - Completed: settings and history persistence reject missing/empty `LOCALAPPDATA` instead of falling back to a relative working-directory path; CTest covers the missing-environment case
-- Completed: versioned, bounded event-history persistence with atomic file replacement, failed-save temporary-file cleanup, process-scoped temporary names and checked stream close, 30-second checkpoints and shutdown save
+- Completed: versioned, bounded event-history persistence with atomic file replacement, failed-save temporary-file cleanup, process-scoped temporary names and checked stream close, 30-second checkpoints and shutdown save; checkpoint and shutdown save failures now produce a one-time warning that resets after a successful save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - Completed: App teardown is idempotent and also runs after partial initialization failures; owned settings/history top-level windows, Raw Input registration, timers, tray icon and overlays are explicitly released
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
