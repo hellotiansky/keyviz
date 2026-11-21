@@ -13,9 +13,10 @@
 - Completed: searchable/filterable history browser, event counts, empty states and filtered UTF-8 CSV export
 - Completed: CTest coverage for history capacity, resizing, clearing, event coalescing and persistence round-trips
 - Completed: versioned, bounded event-history persistence with atomic file replacement, 30-second checkpoints and shutdown save
+- Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - In progress: robust keyboard layout/modifier handling and configurable animation
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
-- Next: tray integration and installer packaging
+- Next: installer packaging and application icon/resources
 - Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
 
 The original Tauri application remains intact on the base branch.
