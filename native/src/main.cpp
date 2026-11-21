@@ -5,6 +5,7 @@
 #include "keyviz/event_engine.h"
 #include "keyviz/renderer.h"
 #include "keyviz/settings_store.h"
+#include "keyviz/history_persistence.h"
 
 #include <algorithm>
 #include <memory>
@@ -443,6 +444,8 @@ public:
         const auto initialFilters = settingsStore_.load();
         engine_.setFilterSettings(initialFilters);
         engine_.setHistoryCapacity(initialFilters.historyCapacity);
+        historyPath_ = HistoryPersistence::defaultPath();
+        if (!historyPath_.empty()) HistoryPersistence::load(historyPath_, engine_.history());
 
         // A single hidden top-level window owns Raw Input and the global hotkey.
         // Overlay windows are presentation-only and never register input devices.
@@ -476,6 +479,7 @@ public:
                 }
             }, [this]() {
                 engine_.clearHistory();
+                if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
                 historyWindow_.refresh();
                 KillTimer(inputWindow_, kRedrawTimerId);
                 invalidateOverlays();
@@ -596,6 +600,7 @@ private:
     }
 
     void shutdown() noexcept {
+        if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
         if (inputWindow_) {
             KillTimer(inputWindow_, kRedrawTimerId);
             UnregisterHotKey(inputWindow_, kSettingsHotkeyId);
@@ -673,6 +678,7 @@ private:
     InputCore input_;
     EventEngine engine_;
     SettingsStore settingsStore_;
+    std::wstring historyPath_;
     SettingsWindow settings_;
     HistoryWindow historyWindow_;
     std::vector<std::unique_ptr<OverlayWindow>> overlays_;
