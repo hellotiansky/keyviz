@@ -15,6 +15,7 @@ From a Visual Studio Developer PowerShell:
 ```powershell
 cmake -S native -B build/native -A x64
 cmake --build build/native --config Release
+ctest --test-dir build/native -C Release --output-on-failure
 ```
 
 Output: `build/native/Release/KeyvizNative.exe`.
@@ -29,6 +30,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Normalized key press/release, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
+- CTest coverage for history capacity limits, runtime resizing, clearing, and event coalescing
 - Bounded in-memory event history with configurable 40/80/160/320-event retention
 - History retention preference persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
 - Native Win32 settings window; Ctrl+Shift+K shortcut
