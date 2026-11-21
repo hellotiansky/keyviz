@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <commdlg.h>
+#include <shellapi.h>
 #include "keyviz/input_core.h"
 #include "keyviz/input_event.h"
 #include "keyviz/event_engine.h"
@@ -30,6 +31,11 @@ constexpr int kSettingsHotkeyId = 1;
 constexpr int kHistoryHotkeyId = 2;
 constexpr UINT_PTR kRedrawTimerId = 2;
 constexpr UINT_PTR kHistorySaveTimerId = 3;
+constexpr UINT kTrayCallbackMessage = WM_APP + 1;
+constexpr UINT kTraySettingsCommand = 401;
+constexpr UINT kTrayHistoryCommand = 402;
+constexpr UINT kTrayExitCommand = 403;
+constexpr UINT kTrayIconId = 1;
 
 class SettingsWindow {
 public:
@@ -486,6 +492,7 @@ public:
                 KillTimer(inputWindow_, kRedrawTimerId);
                 invalidateOverlays();
             })) return false;
+        addTrayIcon();
         if (!RegisterHotKey(inputWindow_, kHistoryHotkeyId, MOD_CONTROL | MOD_SHIFT, 'H')) {
             MessageBoxW(nullptr, L"Ctrl+Shift+H could not be registered.",
                 kAppName, MB_ICONWARNING | MB_OK);
@@ -509,6 +516,45 @@ public:
     }
 
 private:
+    bool addTrayIcon() noexcept {
+        NOTIFYICONDATAW icon{};
+        icon.cbSize = sizeof(icon);
+        icon.hWnd = inputWindow_;
+        icon.uID = kTrayIconId;
+        icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+        icon.uCallbackMessage = kTrayCallbackMessage;
+        icon.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+        lstrcpynW(icon.szTip, L"Keyviz Native", static_cast<int>(std::size(icon.szTip)));
+        trayIconAdded_ = Shell_NotifyIconW(NIM_ADD, &icon) != FALSE;
+        return trayIconAdded_;
+    }
+
+    void removeTrayIcon() noexcept {
+        if (!trayIconAdded_) return;
+        NOTIFYICONDATAW icon{};
+        icon.cbSize = sizeof(icon);
+        icon.hWnd = inputWindow_;
+        icon.uID = kTrayIconId;
+        Shell_NotifyIconW(NIM_DELETE, &icon);
+        trayIconAdded_ = false;
+    }
+
+    void showTrayMenu() {
+        HMENU menu = CreatePopupMenu();
+        if (!menu) return;
+        AppendMenuW(menu, MF_STRING, kTraySettingsCommand, L"Settings");
+        AppendMenuW(menu, MF_STRING, kTrayHistoryCommand, L"Input history");
+        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(menu, MF_STRING, kTrayExitCommand, L"Exit Keyviz");
+        POINT cursor{};
+        GetCursorPos(&cursor);
+        SetForegroundWindow(inputWindow_);
+        TrackPopupMenu(menu, TPM_RIGHTBUTTON, cursor.x, cursor.y, 0,
+            inputWindow_, nullptr);
+        PostMessageW(inputWindow_, WM_NULL, 0, 0);
+        DestroyMenu(menu);
+    }
+
     bool registerWindowClasses() {
         WNDCLASSEXW overlayClass{sizeof(overlayClass)};
         overlayClass.lpfnWndProc = &App::windowProc;
@@ -604,6 +650,7 @@ private:
     void shutdown() noexcept {
         if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
         if (inputWindow_) {
+            removeTrayIcon();
             KillTimer(inputWindow_, kRedrawTimerId);
             KillTimer(inputWindow_, kHistorySaveTimerId);
             UnregisterHotKey(inputWindow_, kSettingsHotkeyId);
@@ -631,6 +678,20 @@ private:
 
         const bool isInputWindow = hwnd == self->inputWindow_;
         switch (message) {
+        case kTrayCallbackMessage:
+            if (isInputWindow && (lParam == WM_RBUTTONUP || lParam == WM_CONTEXTMENU))
+                self->showTrayMenu();
+            else if (isInputWindow && lParam == WM_LBUTTONDBLCLK)
+                self->settings_.show();
+            return 0;
+        case WM_COMMAND:
+            if (isInputWindow && LOWORD(wParam) == kTraySettingsCommand)
+                self->settings_.show();
+            else if (isInputWindow && LOWORD(wParam) == kTrayHistoryCommand)
+                self->historyWindow_.show();
+            else if (isInputWindow && LOWORD(wParam) == kTrayExitCommand)
+                DestroyWindow(hwnd);
+            return 0;
         case WM_INPUT:
             if (isInputWindow)
                 self->handleRawInput(reinterpret_cast<HRAWINPUT>(lParam));
@@ -685,6 +746,7 @@ private:
     EventEngine engine_;
     SettingsStore settingsStore_;
     std::wstring historyPath_;
+    bool trayIconAdded_{};
     SettingsWindow settings_;
     HistoryWindow historyWindow_;
     std::vector<std::unique_ptr<OverlayWindow>> overlays_;
