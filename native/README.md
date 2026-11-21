@@ -35,14 +35,15 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 ## Current implementation
 - C++20 Win32 GUI application with a branded multi-size executable/tray icon, embedded Windows product/file version metadata (0.2.0) and per-monitor DPI awareness V2 request
 - One click-through, topmost overlay window per enumerated display
-- Monitor-aware placement inside each display's work area
+- Per-monitor effective-DPI-aware placement with consistent 580×156 DIPs and 36-DIP bottom margin across mixed-scale displays
+- Mixed-DPI geometry regression tests at 100%, 150% and 200% scaling
 - A single hidden top-level input window owns keyboard and mouse Raw Input registration
 - Input events are shared through one event engine and redrawn on every monitor overlay
 - Display resolution changes and device-tree notifications schedule a debounced (300 ms) overlay rebuild, covering monitor hot-plug and topology changes
 - Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation including E0-prefixed extended scan codes and visible dead-key accents, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
-- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords and AltGr state
+- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords, AltGr state and mixed-DPI overlay geometry
 - Bounded event history with configurable 40/80/160/320-event retention
 - Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced and checkpointed every 30 seconds and on clean shutdown
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
