@@ -41,9 +41,9 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - Input events are shared through one event engine and redrawn on every monitor overlay
 - Display resolution changes and device-tree notifications schedule a debounced (300 ms) overlay rebuild, covering monitor hot-plug and topology changes
 - Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation including E0-prefixed extended scan codes and visible dead-key accents, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
-- Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
+- Mouse movement sampling with unified virtual-desktop cursor coordinates; the overlay labels desktop-absolute coordinates and active-monitor-local coordinates separately, including negative origins on left/upper displays
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
-- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords, AltGr state and mixed-DPI overlay geometry
+- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, persistence round-trips, left/right Ctrl normalization, modifier chords, AltGr state mixed-DPI overlay geometry and virtual-desktop pointer coordinate formatting
 - Bounded event history with configurable 40/80/160/320-event retention
 - Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced and checkpointed every 30 seconds and on clean shutdown
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
@@ -63,7 +63,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - Overlay fade timing is configurable; richer animation styles and easing remain future work.
 - A sudden power loss or forced process termination can lose events recorded since the last 30-second history checkpoint.
 - Global IME composition and committed-text capture are intentionally not implemented; see `native/docs/IME_AND_TEXT_INPUT.md` for the architecture and privacy assessment. Dead-key accents are labeled, but locale-specific sequences still need physical-device validation.
-- Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
+- Pointer coordinates are shown as both virtual-desktop screen coordinates and coordinates relative to the active monitor's top-left corner; monitor-local coordinates are display-only and do not replace stored virtual-desktop values.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
 ## Next milestones
