@@ -39,3 +39,6 @@
 - Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
 
 The original Tauri application remains intact on the base branch.
+
+
+- Keyboard modifier state is tracked per Raw Input device; removing one keyboard clears only that device's keys, preserving modifiers still held on other keyboards. If Windows cannot identify a removed device, state is reset conservatively.
