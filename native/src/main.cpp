@@ -737,6 +737,11 @@ private:
                 self->handleRawInput(reinterpret_cast<HRAWINPUT>(lParam));
             // Required cleanup for foreground WM_INPUT messages.
             return DefWindowProcW(hwnd, message, wParam, lParam);
+        case WM_INPUT_DEVICE_CHANGE:
+            if (isInputWindow)
+                InputCore::handleDeviceChange(
+                    wParam, reinterpret_cast<HANDLE>(lParam));
+            return 0;
         case WM_HOTKEY:
             if (isInputWindow && wParam == kSettingsHotkeyId)
                 self->settings_.show();
