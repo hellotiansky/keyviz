@@ -12,6 +12,8 @@ struct InputEvent {
     LONG screenX{};
     LONG screenY{};
     USHORT virtualKey{};
+    // Runtime-only Raw Input source identity; not persisted with historical events.
+    HANDLE sourceDevice{};
     unsigned repeatCount{1};
     bool isRepeat{false};
     std::wstring chordLabel;
