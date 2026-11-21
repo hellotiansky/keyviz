@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <cstdlib>
+#include <cstddef>
 #include <filesystem>
 #include <string>
 
@@ -12,6 +13,7 @@ struct FilterSettings {
     bool mouseButtons{true};
     bool mouseWheel{true};
     bool mouseMove{true};
+    std::size_t historyCapacity{80};
 };
 
 class SettingsStore {
@@ -23,20 +25,26 @@ public:
         settings.mouseButtons = readBool(path, L"MouseButtons", true);
         settings.mouseWheel = readBool(path, L"MouseWheel", true);
         settings.mouseMove = readBool(path, L"MouseMove", true);
+        const UINT capacity = path.empty() ? 80 :
+            GetPrivateProfileIntW(L"History", L"Capacity", 80, path.c_str());
+        settings.historyCapacity = capacity == 40 || capacity == 80 ||
+            capacity == 160 || capacity == 320 ? capacity : 80;
         return settings;
     }
 
     bool save(const FilterSettings& settings) const {
         const auto path = settingsPath();
         if (path.empty()) return false;
-        const auto write = [&path](const wchar_t* key, bool value) {
-            return WritePrivateProfileStringW(L"Filters", key,
-                value ? L"1" : L"0", path.c_str()) != FALSE;
+        const auto write = [&path](const wchar_t* section, const wchar_t* key,
+            const std::wstring& value) {
+            return WritePrivateProfileStringW(section, key,
+                value.c_str(), path.c_str()) != FALSE;
         };
-        return write(L"Keyboard", settings.keyboard) &&
-            write(L"MouseButtons", settings.mouseButtons) &&
-            write(L"MouseWheel", settings.mouseWheel) &&
-            write(L"MouseMove", settings.mouseMove);
+        return write(L"Filters", L"Keyboard", settings.keyboard ? L"1" : L"0") &&
+            write(L"Filters", L"MouseButtons", settings.mouseButtons ? L"1" : L"0") &&
+            write(L"Filters", L"MouseWheel", settings.mouseWheel ? L"1" : L"0") &&
+            write(L"Filters", L"MouseMove", settings.mouseMove ? L"1" : L"0") &&
+            write(L"History", L"Capacity", std::to_wstring(settings.historyCapacity));
     }
 
 private:
