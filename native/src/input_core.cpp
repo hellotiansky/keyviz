@@ -33,8 +33,28 @@ void InputCore::stop() noexcept {
     registered_ = false; pressedKeys_.fill(false);
 }
 bool InputCore::read(HRAWINPUT handle, RAWINPUT& raw) noexcept {
+    raw = {};
     UINT size = sizeof(raw);
-    return GetRawInputData(handle, RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1);
+    const UINT copied = GetRawInputData(
+        handle, RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER));
+    if (copied == static_cast<UINT>(-1) ||
+        copied != size ||
+        copied > sizeof(raw) ||
+        copied < sizeof(RAWINPUTHEADER)) {
+        return false;
+    }
+
+    // The RAWINPUT union is sized for its largest member (HID), while
+    // keyboard and mouse packets have shorter valid payloads. Validate the
+    // member selected by dwType before decode() accesses it.
+    switch (raw.header.dwType) {
+    case RIM_TYPEKEYBOARD:
+        return copied >= sizeof(RAWINPUTHEADER) + sizeof(RAWKEYBOARD);
+    case RIM_TYPEMOUSE:
+        return copied >= sizeof(RAWINPUTHEADER) + sizeof(RAWMOUSE);
+    default:
+        return false;
+    }
 }
 USHORT InputCore::normalizedVirtualKey(const RAWKEYBOARD& key) noexcept {
     const bool extended = (key.Flags & RI_KEY_E0) != 0;
