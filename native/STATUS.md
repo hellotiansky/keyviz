@@ -27,6 +27,7 @@
 - Completed: decoded keyboard events retain their runtime Raw Input device identity so history repeat coalescing cannot attribute one keyboard's repeats to another keyboard; CTest covers interleaved same-key presses across devices
 - Completed: versioned, bounded event-history persistence with atomic file replacement, failed-save temporary-file cleanup, process-scoped temporary names and checked stream close, 30-second checkpoints and shutdown save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
+- Completed: App teardown is idempotent and also runs after partial initialization failures; owned settings/history top-level windows, Raw Input registration, timers, tray icon and overlays are explicitly released
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
 - Completed: key translation now uses the app's tracked Raw Input modifier state (including left/right modifiers and AltGr state)
 - Completed: E0 and E1 extended scan-code prefixes are passed to keyboard-layout translation, with CTest coverage for standard, E0 and E1 scan codes; Pause and Print Screen use stable explicit labels with regression coverage
