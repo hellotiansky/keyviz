@@ -35,6 +35,16 @@ public:
         if (path.empty()) return false;
         const std::filesystem::path target(path);
         const std::filesystem::path temporary = target.wstring() + L".tmp";
+        struct TemporaryFileCleanup {
+            const std::filesystem::path& path;
+            bool committed{};
+            ~TemporaryFileCleanup() {
+                if (!committed) {
+                    std::error_code error;
+                    std::filesystem::remove(path, error);
+                }
+            }
+        } cleanup{temporary};
         std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
         if (!output) return false;
 
@@ -58,8 +68,10 @@ public:
         output.flush();
         if (!output) return false;
         output.close();
-        return MoveFileExW(temporary.c_str(), target.c_str(),
-            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != FALSE;
+        if (!MoveFileExW(temporary.c_str(), target.c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) return false;
+        cleanup.committed = true;
+        return true;
     }
 
     static bool load(const std::wstring& path, HistoryStore& history) {
