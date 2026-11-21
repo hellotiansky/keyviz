@@ -11,10 +11,11 @@
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
 - Completed: display topology change rebuilds the overlay set
 - Completed: normalized keyboard, mouse button and wheel capture; sampled mouse movement
+- Completed: pointer overlay labels virtual-desktop coordinates separately from active-monitor-local coordinates, retaining signed negative desktop origins
 - Completed: InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - Completed: native settings window, persisted event filters and configurable 40/80/160/320-event history capacity
 - Completed: searchable/filterable history browser, event counts, empty states and filtered UTF-8 CSV export
-- Completed: CTest coverage for history capacity, resizing, clearing, event coalescing and persistence round-trips
+- Completed: CTest coverage for history capacity, resizing, clearing, event coalescing, persistence round-trips, mixed-DPI layout and signed multi-monitor pointer coordinates
 - Completed: Raw Input core tests for left/right Ctrl normalization, modifier chord state and AltGr combinations
 - Completed: versioned, bounded event-history persistence with atomic file replacement, 30-second checkpoints and shutdown save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
