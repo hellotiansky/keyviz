@@ -52,7 +52,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - History and settings persistence fail closed when `LOCALAPPDATA` is unavailable, rather than creating relative `Keyviz` data in the working directory
 - Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced using process-scoped temporary files with checked flush/close and failed-save cleanup, and checkpointed every 30 seconds and on clean shutdown
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
-- Settings Apply only updates active runtime filters after every setting is persisted successfully; failed saves keep the previous runtime configuration and restore the controls
+- Settings Apply only updates active runtime filters after every setting is persisted successfully; failed saves keep the previous runtime configuration and restore the controls; profile API writes are explicitly flushed before Apply reports success
 - History retention and overlay fade duration (0.4/0.8/1.1/1.6 seconds) persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
 - Notification-area tray icon with Settings, Input history and Exit commands
 - Inno Setup per-user x64 installer with Start Menu and optional desktop shortcuts
