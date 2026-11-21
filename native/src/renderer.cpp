@@ -1,4 +1,5 @@
 #include "keyviz/renderer.h"
+#include "keyviz/pointer_coordinates.h"
 
 #include <algorithm>
 #include <iterator>
@@ -132,8 +133,14 @@ void Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationM
     secondaryBrush_->SetOpacity(0.92f);
     std::wstring pointerText = L"Ctrl + Shift + K   |   Native settings";
     if (latestPointer) {
-        pointerText = L"POINTER   X " + std::to_wstring(latestPointer->screenX) +
-            L"   Y " + std::to_wstring(latestPointer->screenY);
+        const POINT point{latestPointer->screenX, latestPointer->screenY};
+        const HMONITOR monitor = MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo{sizeof(monitorInfo)};
+        RECT monitorBounds{};
+        if (monitor && GetMonitorInfoW(monitor, &monitorInfo))
+            monitorBounds = monitorInfo.rcMonitor;
+        pointerText = formatPointerCoordinates(
+            latestPointer->screenX, latestPointer->screenY, monitorBounds);
     }
     target_->DrawText(pointerText.c_str(),
         static_cast<UINT32>(pointerText.size()), bodyFormat_.Get(),
