@@ -229,6 +229,32 @@ void truncatedPersistenceDoesNotReplaceExistingHistory() {
     std::filesystem::remove(path, error);
 }
 
+void failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile() {
+    const auto target = std::filesystem::temp_directory_path() /
+        (L"keyviz-history-replace-failure-" + std::to_wstring(GetCurrentProcessId()));
+    const auto temporary = std::filesystem::path(target.wstring() + L".tmp");
+    std::error_code error;
+    std::filesystem::remove_all(target, error);
+    std::filesystem::remove(temporary, error);
+    assert(std::filesystem::create_directory(target, error));
+    const auto sentinel = target / L"preserve.txt";
+    {
+        std::ofstream output(sentinel, std::ios::binary | std::ios::trunc);
+        output << "keep existing target";
+        assert(static_cast<bool>(output));
+    }
+
+    HistoryStore history(4);
+    history.append(keyEvent('R', 1));
+    assert(!keyviz::HistoryPersistence::save(target.wstring(), history));
+    assert(std::filesystem::exists(target));
+    assert(std::filesystem::exists(sentinel));
+    assert(!std::filesystem::exists(temporary));
+
+    std::filesystem::remove_all(target, error);
+    std::filesystem::remove(temporary, error);
+}
+
 void clearRemovesAllEvents() {
     HistoryStore history(4);
     history.append(keyEvent('A', 1));
@@ -247,5 +273,6 @@ int main() {
     clearRemovesAllEvents();
     persistenceRoundTripsEventsAndHonorsCapacity();
     truncatedPersistenceDoesNotReplaceExistingHistory();
+    failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile();
     return 0;
 }
