@@ -23,6 +23,7 @@
 - Completed: key translation now uses the app's tracked Raw Input modifier state (including left/right modifiers and AltGr state)
 - Completed: E0 extended scan-code prefix is passed to keyboard-layout translation
 - Completed: printable dead-key accents are surfaced with a `(dead)` label without consuming layout composition state
+- Completed: keyboard translation label formatting is isolated and unit-tested for printable output, dead-key accents, non-printable fallback, null buffers and oversized translation lengths
 - Documented: IME integration options and privacy boundary in `native/docs/IME_AND_TEXT_INPUT.md`
 - In progress: locale-specific dead-key sequences, remaining keyboard-layout edge cases and richer animation styles
 - IME limitation: global composition and committed-text capture remain intentionally unsupported; do not read arbitrary foreground document text or inject hooks into other processes
