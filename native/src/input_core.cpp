@@ -4,12 +4,13 @@
 #include <hidusage.h>
 #include <cwctype>
 #include <iterator>
+#include <unordered_map>
 #include <utility>
 namespace keyviz {
 POINT InputCore::lastMousePoint_{};
 bool InputCore::haveMousePoint_ = false;
 DWORD InputCore::lastMouseMoveTick_ = 0;
-std::array<bool, 256> InputCore::pressedKeys_{};
+std::unordered_map<HANDLE, std::array<bool, 256>> InputCore::pressedKeysByDevice_{};
 bool InputCore::start(HWND target) noexcept {
     // A new capture session must never inherit key or pointer sampling state.
     resetKeyboardState();
@@ -44,7 +45,19 @@ void InputCore::stop() noexcept {
     lastMouseMoveTick_ = 0;
 }
 void InputCore::resetKeyboardState() noexcept {
-    pressedKeys_.fill(false);
+    pressedKeysByDevice_.clear();
+}
+
+void InputCore::resetKeyboardState(HANDLE device) noexcept {
+    pressedKeysByDevice_.erase(device);
+}
+
+bool InputCore::isKeyPressed(USHORT virtualKey) noexcept {
+    for (const auto& [device, keys] : pressedKeysByDevice_) {
+        (void)device;
+        if (virtualKey < keys.size() && keys[virtualKey]) return true;
+    }
+    return false;
 }
 
 void InputCore::handleDeviceChange(WPARAM change, HANDLE device) noexcept {
@@ -58,8 +71,11 @@ void InputCore::handleDeviceChange(WPARAM change, HANDLE device) noexcept {
 
     // If device metadata cannot be queried during removal, reset conservatively:
     // stale modifier state is worse than temporarily losing a held chord.
-    if (result == static_cast<UINT>(-1) || info.dwType == RIM_TYPEKEYBOARD)
+    if (result == static_cast<UINT>(-1)) {
         resetKeyboardState();
+    } else if (info.dwType == RIM_TYPEKEYBOARD) {
+        resetKeyboardState(device);
+    }
 }
 
 bool InputCore::read(HRAWINPUT handle, RAWINPUT& raw) noexcept {
@@ -106,10 +122,10 @@ std::wstring InputCore::chordName(USHORT vk, const std::wstring& keyLabel) {
         if (!chord.empty()) chord += L" + ";
         chord += name;
     };
-    if (pressedKeys_[VK_LCONTROL] || pressedKeys_[VK_RCONTROL]) add(L"Ctrl");
-    if (pressedKeys_[VK_LSHIFT] || pressedKeys_[VK_RSHIFT]) add(L"Shift");
-    if (pressedKeys_[VK_LMENU] || pressedKeys_[VK_RMENU]) add(L"Alt");
-    if (pressedKeys_[VK_LWIN] || pressedKeys_[VK_RWIN]) add(L"Win");
+    if (isKeyPressed(VK_LCONTROL) || isKeyPressed(VK_RCONTROL)) add(L"Ctrl");
+    if (isKeyPressed(VK_LSHIFT) || isKeyPressed(VK_RSHIFT)) add(L"Shift");
+    if (isKeyPressed(VK_LMENU) || isKeyPressed(VK_RMENU)) add(L"Alt");
+    if (isKeyPressed(VK_LWIN) || isKeyPressed(VK_RWIN)) add(L"Win");
     if (!chord.empty()) chord += L" + ";
     chord += keyLabel;
     return chord;
@@ -128,7 +144,7 @@ std::wstring InputCore::localizedKeyName(const RAWKEYBOARD& key) {
     // foreground thread's asynchronous state. This keeps background capture and
     // AltGr/left-right modifier translation consistent with the captured stream.
     for (int code = 0; code < 256; ++code) {
-        if (pressedKeys_[code]) state[code] |= 0x80;
+        if (isKeyPressed(static_cast<USHORT>(code))) state[code] |= 0x80;
     }
     state[VK_SHIFT] = (state[VK_LSHIFT] || state[VK_RSHIFT]) ? 0x80 : 0;
     state[VK_CONTROL] = (state[VK_LCONTROL] || state[VK_RCONTROL]) ? 0x80 : 0;
@@ -172,8 +188,9 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
         const USHORT vk = normalizedVirtualKey(key);
         if (vk >= pressedKeys_.size()) return events;
         const bool keyUp = (key.Flags & RI_KEY_BREAK) != 0;
-        const bool repeat = !keyUp && pressedKeys_[vk];
-        pressedKeys_[vk] = !keyUp;
+        auto& pressedKeys = pressedKeysByDevice_[raw.header.hDevice];
+        const bool repeat = !keyUp && pressedKeys[vk];
+        pressedKeys[vk] = !keyUp;
         InputEvent event{};
         event.type = keyUp ? InputEvent::Type::KeyUp : InputEvent::Type::KeyDown;
         event.label = localizedKeyName(key);
