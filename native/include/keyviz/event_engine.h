@@ -17,6 +17,7 @@ public:
     void setHistoryCapacity(std::size_t capacity) {
         history_.setCapacity(capacity);
     }
+    HistoryStore& history() noexcept { return history_; }
     const HistoryStore& history() const noexcept { return history_; }
     void clearHistory() noexcept { history_.clear(); }
 
