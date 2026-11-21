@@ -175,6 +175,8 @@ public:
         HWND typeFilter = GetDlgItem(hwnd_, kTypeFilterId);
         if (!list || !search || !typeFilter || !getEvents_) return;
         SendMessageW(list, LB_RESETCONTENT, 0, 0);
+        int totalCount = 0;
+        int visibleCount = 0;
         const int selectedType = static_cast<int>(SendMessageW(typeFilter, CB_GETCURSEL, 0, 0));
         wchar_t searchBuffer[256]{};
         GetWindowTextW(search, searchBuffer, static_cast<int>(std::size(searchBuffer)));
@@ -182,6 +184,7 @@ public:
         const auto& events = getEvents_();
         const DWORD now = GetTickCount();
         for (const auto& event : events) {
+            ++totalCount;
             const wchar_t* type = L"KEY";
             switch (event.type) {
             case InputEvent::Type::KeyDown: type = L"KEY DOWN"; break;
@@ -194,6 +197,7 @@ public:
             std::wstring searchable = event.label + L" " + event.chordLabel;
             if (!matchesType(event, selectedType) || !containsInsensitive(searchable, query))
                 continue;
+            ++visibleCount;
             const DWORD age = now - event.timestamp;
             std::wstring line = L"[" + std::to_wstring(age) + L" ms ago]  ";
             line += type;
@@ -204,12 +208,24 @@ public:
             SendMessageW(list, LB_ADDSTRING, 0,
                 reinterpret_cast<LPARAM>(line.c_str()));
         }
+        if (visibleCount == 0) {
+            const wchar_t* emptyMessage = totalCount == 0
+                ? L"No input events recorded yet."
+                : L"No events match the current search and filter.";
+            SendMessageW(list, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(emptyMessage));
+        }
+        if (HWND status = GetDlgItem(hwnd_, kStatusId)) {
+            std::wstring summary = std::to_wstring(visibleCount) + L" of " +
+                std::to_wstring(totalCount) + L" events shown";
+            SetWindowTextW(status, summary.c_str());
+        }
     }
 
 private:
     static constexpr int kSearchId = 301;
     static constexpr int kTypeFilterId = 302;
     static constexpr int kListId = 303;
+    static constexpr int kStatusId = 304;
 
     static bool containsInsensitive(const std::wstring& value, const std::wstring& query) {
         if (query.empty()) return true;
@@ -264,8 +280,12 @@ private:
             CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", nullptr,
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL |
                     LBS_NOINTEGRALHEIGHT | LBS_HASSTRINGS,
-                10, 42, 580, 328, hwnd,
+                10, 42, 580, 300, hwnd,
                 reinterpret_cast<HMENU>(static_cast<INT_PTR>(kListId)),
+                instance, nullptr);
+            CreateWindowExW(0, L"STATIC", L"0 of 0 events shown",
+                WS_CHILD | WS_VISIBLE, 10, 376, 580, 20, hwnd,
+                reinterpret_cast<HMENU>(static_cast<INT_PTR>(kStatusId)),
                 instance, nullptr);
             return 0;
         }
@@ -278,13 +298,16 @@ private:
             break;
         case WM_SIZE: {
             const int width = std::max(0, static_cast<int>(LOWORD(lParam)) - 20);
-            const int height = std::max(0, static_cast<int>(HIWORD(lParam)) - 62);
+            const int clientHeight = static_cast<int>(HIWORD(lParam));
+            const int height = std::max(0, clientHeight - 90);
             if (HWND search = GetDlgItem(hwnd, kSearchId))
                 MoveWindow(search, 68, 8, std::max(120, width - 330), 26, TRUE);
             if (HWND filter = GetDlgItem(hwnd, kTypeFilterId))
                 MoveWindow(filter, std::max(330, width - 180), 8, 180, 200, TRUE);
             if (HWND list = GetDlgItem(hwnd, kListId))
                 MoveWindow(list, 10, 42, width, height, TRUE);
+            if (HWND status = GetDlgItem(hwnd, kStatusId))
+                MoveWindow(status, 10, std::max(42, clientHeight - 26), width, 20, TRUE);
             return 0;
         }
         case WM_CLOSE:
