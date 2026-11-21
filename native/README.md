@@ -20,6 +20,17 @@ ctest --test-dir build/native -C Release --output-on-failure
 
 Output: `build/native/Release/KeyvizNative.exe`.
 
+## Windows installer
+
+The repository includes an Inno Setup definition at `installer/keyviz-native.iss`. On a Windows x64 build machine with Inno Setup 6 installed, build the native executable first, then run:
+
+```powershell
+& "$env:ProgramFiles(x86)\\Inno Setup 6\\ISCC.exe" installer/keyviz-native.iss
+```
+
+The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe`. It installs under `%LOCALAPPDATA%\\Programs\\Keyviz Native`, adds a Start Menu shortcut, optionally creates a desktop shortcut, and offers to launch the app after setup. It does not configure automatic startup. The uninstaller is registered through Windows Apps settings.
+
+
 ## Current implementation
 - C++20 Win32 GUI application and per-monitor DPI awareness V2 request
 - One click-through, topmost overlay window per enumerated display
@@ -36,6 +47,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
 - History retention preference persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
 - Notification-area tray icon with Settings, Input history and Exit commands
+- Inno Setup per-user x64 installer with Start Menu and optional desktop shortcuts
 - Native Win32 settings window; Ctrl+Shift+K shortcut
 - Native input history window; Ctrl+Shift+H shortcut
 - History search with case-insensitive key/chord matching and event-type filters
@@ -55,6 +67,6 @@ Output: `build/native/Release/KeyvizNative.exe`.
 ## Next milestones
 1. Add robust modifier/keyboard-layout handling and configurable animation.
 2. Add durable history persistence and richer history navigation.
-3. Add tray integration and installer packaging.
+3. Complete physical-device validation and refine installer branding/resources.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
