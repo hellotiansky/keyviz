@@ -4,6 +4,8 @@
 
 Keyviz Native registers keyboard and mouse Raw Input on one hidden top-level window. Raw Input reports physical key transitions and scan codes; it does not forward another process's IME composition string, candidate list, or committed text to this window. The current renderer therefore visualizes physical input, not arbitrary text entered into other applications.
 
+For each translated key, the implementation resolves the current foreground window's owning thread and obtains that thread's active `HKL` with `GetKeyboardLayout`; it does not cache the layout. Consequently, a foreground application's input-language switch is reflected on the next key translation without maintaining a separate `WM_INPUTLANGCHANGE` cache-invalidation path. If there is no foreground window, the call uses the capture thread's current layout (`GetKeyboardLayout(0)`). This selects a layout for key-label translation only; it does not make the hidden Raw Input window an IME client for the foreground application.
+
 Keyboard-layout translation uses `ToUnicodeEx` with `TU_NO_STATE_CHANGE` (`0x4`) so looking up a key label does not consume or mutate the foreground layout's pending dead-key composition state. A negative `ToUnicodeEx` result identifies a dead key; the native label now exposes its printable accent with a `(dead)` suffix. Extended E0 and E1 scan-code prefixes are preserved for layout translation (including the special E1-prefixed key sequences). Translated Unicode labels are filtered for control code points without relying on the C runtime's locale-sensitive `iswprint`, so layouts producing CJK characters remain supported even when the process locale is still the default `C` locale.
 
 ## Options considered
@@ -26,5 +28,6 @@ Keyboard-layout translation uses `ToUnicodeEx` with `TU_NO_STATE_CHANGE` (`0x4`)
 ## Follow-up validation
 
 1. Test dead-key sequences (for example, accent then vowel) with several installed layouts and confirm that label lookup does not consume the composition state.
-2. Test AltGr, E0/E1 extended keys (including Pause/Break behavior) on physical keyboards.
-3. If a future opt-in text feature is proposed, define its exact scope and retention behavior before implementing any cross-process integration.
+2. Switch the foreground application's input language while capture remains active and confirm the next key label uses the newly active layout.
+3. Test AltGr, E0/E1 extended keys (including Pause/Break behavior) on physical keyboards.
+4. If a future opt-in text feature is proposed, define its exact scope and retention behavior before implementing any cross-process integration.
