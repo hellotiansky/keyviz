@@ -6,6 +6,13 @@
 
 namespace keyviz {
 
+inline unsigned int keyboardTranslationScanCode(
+    unsigned short makeCode, bool e0, bool e1) noexcept {
+    const unsigned int prefix = e1 ? 0xE100u : (e0 ? 0xE000u : 0u);
+    return static_cast<unsigned int>(makeCode) | prefix;
+}
+
+
 inline std::wstring translatedKeyLabel(
     int translatedLength,
     const wchar_t* translated,
