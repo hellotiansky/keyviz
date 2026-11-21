@@ -186,7 +186,7 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
         const RAWKEYBOARD& key = raw.data.keyboard;
         if (key.VKey == 255) return events;
         const USHORT vk = normalizedVirtualKey(key);
-        if (vk >= pressedKeys_.size()) return events;
+        if (vk >= 256) return events;
         const bool keyUp = (key.Flags & RI_KEY_BREAK) != 0;
         auto& pressedKeys = pressedKeysByDevice_[raw.header.hDevice];
         const bool repeat = !keyUp && pressedKeys[vk];
