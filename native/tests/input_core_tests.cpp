@@ -127,6 +127,8 @@ void repeatedKeysAreTrackedIndependentlyPerKeyboard() {
     const auto secondDown = decodeOne('A', 0x1E, 0, secondKeyboard);
     assert(!firstDown.isRepeat);
     assert(!secondDown.isRepeat);
+    assert(firstDown.sourceDevice == firstKeyboard);
+    assert(secondDown.sourceDevice == secondKeyboard);
 
     const auto firstRepeat = decodeOne('A', 0x1E, 0, firstKeyboard);
     const auto secondRepeat = decodeOne('A', 0x1E, 0, secondKeyboard);
