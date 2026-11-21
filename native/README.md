@@ -66,7 +66,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 
 ## Next milestones
 1. Improve edge cases in modifier and keyboard-layout handling; expand animation styles.
-2. Add durable history persistence and richer history navigation.
-3. Complete physical-device validation and refine installer branding/resources.
+2. Investigate a separate, opt-in text-input integration for IME-committed text and richer history navigation.
+3. Add a branded application icon and complete physical-device validation.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
