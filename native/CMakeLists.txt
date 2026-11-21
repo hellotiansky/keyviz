@@ -13,7 +13,7 @@ add_executable(KeyvizNative WIN32
     resources/keyviz.rc
 )
 
-target_include_directories(KeyvizNative PRIVATE include)
+target_include_directories(KeyvizNative PRIVATE include resources)
 target_compile_features(KeyvizNative PRIVATE cxx_std_20)
 target_compile_definitions(KeyvizNative PRIVATE
     UNICODE
