@@ -232,7 +232,8 @@ void truncatedPersistenceDoesNotReplaceExistingHistory() {
 void failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile() {
     const auto target = std::filesystem::temp_directory_path() /
         (L"keyviz-history-replace-failure-" + std::to_wstring(GetCurrentProcessId()));
-    const auto temporary = std::filesystem::path(target.wstring() + L".tmp");
+    const auto temporary = std::filesystem::path(target.wstring() + L"." +
+        std::to_wstring(GetCurrentProcessId()) + L".tmp");
     std::error_code error;
     std::filesystem::remove_all(target, error);
     std::filesystem::remove(temporary, error);
