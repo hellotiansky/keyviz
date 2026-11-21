@@ -34,7 +34,8 @@ public:
     static bool save(const std::wstring& path, const HistoryStore& history) {
         if (path.empty()) return false;
         const std::filesystem::path target(path);
-        const std::filesystem::path temporary = target.wstring() + L".tmp";
+        const std::filesystem::path temporary = target.wstring() + L"." +
+            std::to_wstring(GetCurrentProcessId()) + L".tmp";
         struct TemporaryFileCleanup {
             const std::filesystem::path& path;
             bool committed{};
@@ -68,6 +69,7 @@ public:
         output.flush();
         if (!output) return false;
         output.close();
+        if (!output) return false;
         if (!MoveFileExW(temporary.c_str(), target.c_str(),
             MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) return false;
         cleanup.committed = true;
