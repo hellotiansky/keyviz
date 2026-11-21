@@ -111,7 +111,11 @@ void Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationM
     const InputEvent* latestMeaningful = nullptr;
     const InputEvent* latestPointer = nullptr;
     for (const auto& event : history) {
-        if (!latestPointer && event.type == InputEvent::Type::MouseMove)
+        if (!latestPointer &&
+            (event.type == InputEvent::Type::MouseMove ||
+             event.type == InputEvent::Type::MouseDown ||
+             event.type == InputEvent::Type::MouseUp ||
+             event.type == InputEvent::Type::Wheel))
             latestPointer = &event;
         if (event.type != InputEvent::Type::MouseMove &&
             event.type != InputEvent::Type::KeyUp &&
