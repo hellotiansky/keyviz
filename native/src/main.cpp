@@ -693,18 +693,29 @@ private:
     }
 
     bool rebuildOverlays() {
-        for (auto& overlay : overlays_) {
+        // Build the replacement set alongside the currently visible overlays.
+        // A transient monitor/window/D2D failure must not leave the app blank.
+        auto previousOverlays = std::move(overlays_);
+        overlays_.clear();
+
+        const bool enumerated = EnumDisplayMonitors(nullptr, nullptr,
+            &App::monitorCallback, reinterpret_cast<LPARAM>(this)) != FALSE;
+        if (!enumerated || overlays_.empty()) {
+            for (auto& overlay : overlays_) {
+                overlay->renderer.shutdown();
+                if (IsWindow(overlay->hwnd)) DestroyWindow(overlay->hwnd);
+            }
+            overlays_.clear();
+            overlays_ = std::move(previousOverlays);
+            return false;
+        }
+
+        // The complete new set is ready; now release the old windows/renderers.
+        for (auto& overlay : previousOverlays) {
             overlay->renderer.shutdown();
             if (IsWindow(overlay->hwnd)) DestroyWindow(overlay->hwnd);
         }
-        overlays_.clear();
-
-        if (!EnumDisplayMonitors(nullptr, nullptr,
-                &App::monitorCallback, reinterpret_cast<LPARAM>(this))) {
-            // EnumDisplayMonitors returns FALSE if enumeration was interrupted.
-            return false;
-        }
-        return !overlays_.empty();
+        return true;
     }
 
     OverlayWindow* findOverlay(HWND hwnd) noexcept {
