@@ -31,19 +31,19 @@ bool Renderer::initialize(HWND hwnd) {
         DWRITE_FACTORY_TYPE_SHARED,
         __uuidof(IDWriteFactory),
         reinterpret_cast<IUnknown**>(writeFactory_.GetAddressOf()));
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) return fail();
 
     hr = writeFactory_->CreateTextFormat(
         L"Segoe UI", nullptr, DWRITE_FONT_WEIGHT_SEMI_BOLD,
         DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
         30.0f, L"", &titleFormat_);
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) return fail();
 
     hr = writeFactory_->CreateTextFormat(
         L"Segoe UI", nullptr, DWRITE_FONT_WEIGHT_NORMAL,
         DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
         13.0f, L"", &bodyFormat_);
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) return fail();
 
     RECT rect{};
     if (!GetClientRect(hwnd_, &rect)) return fail();
