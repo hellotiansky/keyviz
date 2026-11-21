@@ -36,6 +36,7 @@ constexpr UINT kTraySettingsCommand = 401;
 constexpr UINT kTrayHistoryCommand = 402;
 constexpr UINT kTrayExitCommand = 403;
 constexpr UINT kTrayIconId = 1;
+constexpr WORD kAppIconResourceId = 101;
 
 class SettingsWindow {
 public:
@@ -544,7 +545,10 @@ private:
         icon.uID = kTrayIconId;
         icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
         icon.uCallbackMessage = kTrayCallbackMessage;
-        icon.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+        icon.hIcon = static_cast<HICON>(LoadImageW(instance_,
+            MAKEINTRESOURCEW(kAppIconResourceId), IMAGE_ICON, 0, 0,
+            LR_DEFAULTSIZE | LR_SHARED));
+        if (!icon.hIcon) icon.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
         lstrcpynW(icon.szTip, L"Keyviz Native", static_cast<int>(std::size(icon.szTip)));
         trayIconAdded_ = Shell_NotifyIconW(NIM_ADD, &icon) != FALSE;
         return trayIconAdded_;
