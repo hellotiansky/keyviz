@@ -12,7 +12,7 @@
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
 - Completed: Raw Input packet reads validate copied byte counts and keyboard/mouse payload sizes before decoding
 - Completed: Raw Input keyboard decoding ignores invalid virtual-key sentinels without disturbing held modifiers; keyboard scan-code overrun markers clear only the affected device's unreliable held-key state, with CTest regression coverage
-- Completed: display topology changes rebuild the overlay set transactionally; the previous visible overlays remain active if monitor enumeration, replacement overlay creation, or layered-window alpha configuration fails
+- Completed: display topology changes rebuild the overlay set transactionally; replacement windows remain hidden until every monitor and renderer is ready, then publish together; the previous visible overlays remain active if monitor enumeration, replacement overlay creation, or layered-window alpha configuration fails
 - Completed: normalized keyboard, mouse button and wheel capture; pointer movement samples are capped at 20 Hz and consecutive movement samples coalesce only within uninterrupted movement runs, preserving intervening button/wheel events and their ordering
 - Completed: Raw Input wheel direction uses the signed wheel delta; zero-delta vertical/horizontal wheel packets are ignored, with pure-helper CTest coverage
 - Completed: pointer overlay labels virtual-desktop coordinates separately from active-monitor-local coordinates, retaining signed negative desktop origins
