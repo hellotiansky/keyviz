@@ -239,14 +239,14 @@ private:
         const int size = WideCharToMultiByte(CP_UTF8, 0, value.data(),
             static_cast<int>(value.size()), nullptr, 0, nullptr, nullptr);
         if (size <= 0) return {};
-        std::string result(static_cast<size_t>(size), '\\0');
+        std::string result(static_cast<size_t>(size), '\0');
         WideCharToMultiByte(CP_UTF8, 0, value.data(),
             static_cast<int>(value.size()), result.data(), size, nullptr, nullptr);
         return result;
     }
 
     static std::wstring csvEscape(const std::wstring& value) {
-        std::wstring escaped = L"\\"";
+        std::wstring escaped = L"\"";
         for (wchar_t ch : value) {
             if (ch == L'"') escaped += L'"';
             escaped += ch;
@@ -261,7 +261,7 @@ private:
         OPENFILENAMEW dialog{};
         dialog.lStructSize = sizeof(dialog);
         dialog.hwndOwner = hwnd_;
-        dialog.lpstrFilter = L"CSV files (*.csv)\\0*.csv\\0All files (*.*)\\0*.*\\0";
+        dialog.lpstrFilter = L"CSV files (*.csv)\0*.csv\0All files (*.*)\0*.*\0";
         dialog.lpstrFile = path;
         dialog.nMaxFile = MAX_PATH;
         dialog.lpstrDefExt = L"csv";
@@ -285,7 +285,7 @@ private:
             return;
         }
         output.write("\\xEF\\xBB\\xBF", 3);
-        output << "age_ms,event_type,label,chord,repeat_count\\r\\n";
+        output << "age_ms,event_type,label,chord,repeat_count\r\n";
         for (const auto& event : events) {
             const std::wstring searchable = event.label + L" " + event.chordLabel;
             if (!matchesType(event, selectedType) || !containsInsensitive(searchable, query))
