@@ -18,7 +18,7 @@ public:
 
     bool initialize(HWND hwnd);
     void resize(UINT width, UINT height) noexcept;
-    void render(const std::deque<InputEvent>& history, DWORD fadeDurationMs) noexcept;
+    bool render(const std::deque<InputEvent>& history, DWORD fadeDurationMs) noexcept;
     void shutdown() noexcept;
 
 private:
