@@ -284,7 +284,7 @@ private:
                 MB_ICONERROR | MB_OK);
             return;
         }
-        output.write("\\xEF\\xBB\\xBF", 3);
+        output.write("\xEF\xBB\xBF", 3);
         output << "age_ms,event_type,label,chord,repeat_count\r\n";
         for (const auto& event : events) {
             const std::wstring searchable = event.label + L" " + event.chordLabel;
