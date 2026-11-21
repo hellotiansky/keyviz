@@ -2,6 +2,10 @@
 
 The native Windows rewrite is developed alongside the original Tauri app. The existing app remains unchanged.
 
+## Keyboard device state
+
+Keyboard modifier state is tracked per Raw Input device; removing one keyboard clears only that device's keys, preserving modifiers still held on other keyboards. If Windows cannot identify a removed device, state is reset conservatively.
+
 ## Toolchain
 - Windows 10 x64
 - Visual Studio 2022 (Desktop development with C++)
