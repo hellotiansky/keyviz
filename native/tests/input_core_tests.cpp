@@ -74,6 +74,21 @@ void rightShiftAndRightAltAreTrackedInChords() {
     decodeOne(VK_MENU, 0x38, RI_KEY_BREAK | RI_KEY_E0);
     decodeOne(VK_SHIFT, 0x36, RI_KEY_BREAK);
 }
+
+void releasingOneSideKeepsTheOtherModifierPressed() {
+    decodeOne(VK_CONTROL, 0x1D);
+    decodeOne(VK_CONTROL, 0x1D, RI_KEY_E0);
+    decodeOne(VK_CONTROL, 0x1D, RI_KEY_BREAK | RI_KEY_E0);
+
+    const auto stillControlled = decodeOne('B', 0x30);
+    assert(stillControlled.chordLabel.find(L"Ctrl + ") == 0);
+
+    decodeOne('B', 0x30, RI_KEY_BREAK);
+    decodeOne(VK_CONTROL, 0x1D, RI_KEY_BREAK);
+    const auto noLongerControlled = decodeOne('C', 0x2E);
+    assert(noLongerControlled.chordLabel.find(L"Ctrl + ") != 0);
+    decodeOne('C', 0x2E, RI_KEY_BREAK);
+}
 } // namespace
 
 int main() {
@@ -81,5 +96,6 @@ int main() {
     chordUsesTrackedModifiers();
     altGrTracksRightAltAndControlTogether();
     rightShiftAndRightAltAreTrackedInChords();
+    releasingOneSideKeepsTheOtherModifierPressed();
     return 0;
 }
