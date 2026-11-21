@@ -1,4 +1,5 @@
 #include "keyviz/input_core.h"
+#include "keyviz/mouse_sampling.h"
 #include <hidusage.h>
 #include <cwctype>
 #include <iterator>
@@ -166,8 +167,9 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
         POINT point{};
         if (GetCursorPos(&point)) {
             const DWORD now = GetTickCount();
-            const bool changed = !haveMousePoint_ || point.x != lastMousePoint_.x || point.y != lastMousePoint_.y;
-            if (changed && (!haveMousePoint_ || now - lastMouseMoveTick_ >= 33)) {
+            if (shouldSampleMouseMove(haveMousePoint_,
+                    lastMousePoint_.x, lastMousePoint_.y, lastMouseMoveTick_,
+                    point.x, point.y, now)) {
                 InputEvent move{}; move.type = InputEvent::Type::MouseMove; move.label = L"Pointer";
                 move.screenX = point.x; move.screenY = point.y; events.push_back(std::move(move));
                 lastMousePoint_ = point; haveMousePoint_ = true; lastMouseMoveTick_ = now;
