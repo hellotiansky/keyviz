@@ -161,6 +161,10 @@ std::wstring InputCore::keyName(const RAWKEYBOARD& key) {
     case VK_LCONTROL: return L"Left Ctrl"; case VK_RCONTROL: return L"Right Ctrl";
     case VK_LMENU: return L"Left Alt"; case VK_RMENU: return L"Right Alt";
     case VK_LWIN: return L"Left Win"; case VK_RWIN: return L"Right Win";
+    // Pause uses the E1-prefixed 0x45 sequence, which GetKeyNameTextW's
+    // E0-only extended-key bit cannot represent reliably.
+    case VK_PAUSE: return L"Pause";
+    case VK_SNAPSHOT: return L"Print Screen";
     default: break;
     }
     if (key.VKey == 255) return {};
