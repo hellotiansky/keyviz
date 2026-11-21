@@ -42,7 +42,7 @@ constexpr WORD kAppIconResourceId = 101;
 class SettingsWindow {
 public:
     bool create(HINSTANCE instance, const FilterSettings& initial,
-        std::function<void(const FilterSettings&)> onApply,
+        std::function<bool(const FilterSettings&)> onApply,
         std::function<void()> onClearHistory) {
         settings_ = initial;
         onApply_ = std::move(onApply);
@@ -178,8 +178,28 @@ private:
                 constexpr DWORD durations[] = {400, 800, 1100, 1600};
                 if (animation >= 0 && animation < 4)
                     next.animationDurationMs = durations[animation];
-                if (self->onApply_) self->onApply_(next);
-                self->settings_ = next;
+                if (self->onApply_ && self->onApply_(next)) {
+                    self->settings_ = next;
+                } else {
+                    CheckDlgButton(hwnd, kKeyboardFilterId,
+                        self->settings_.keyboard ? BST_CHECKED : BST_UNCHECKED);
+                    CheckDlgButton(hwnd, kMouseButtonsFilterId,
+                        self->settings_.mouseButtons ? BST_CHECKED : BST_UNCHECKED);
+                    CheckDlgButton(hwnd, kWheelFilterId,
+                        self->settings_.mouseWheel ? BST_CHECKED : BST_UNCHECKED);
+                    CheckDlgButton(hwnd, kMouseMoveFilterId,
+                        self->settings_.mouseMove ? BST_CHECKED : BST_UNCHECKED);
+                    const int capacityIndex = self->settings_.historyCapacity == 40 ? 0 :
+                        self->settings_.historyCapacity == 160 ? 2 :
+                        self->settings_.historyCapacity == 320 ? 3 : 1;
+                    SendDlgItemMessageW(hwnd, kHistoryCapacityId, CB_SETCURSEL,
+                        capacityIndex, 0);
+                    const int durationIndex = self->settings_.animationDurationMs == 400 ? 0 :
+                        self->settings_.animationDurationMs == 800 ? 1 :
+                        self->settings_.animationDurationMs == 1600 ? 3 : 2;
+                    SendDlgItemMessageW(hwnd, kAnimationDurationId, CB_SETCURSEL,
+                        durationIndex, 0);
+                }
                 return 0;
             }
             if (LOWORD(wParam) == kClearHistoryId) {
@@ -197,7 +217,7 @@ private:
 
     HWND hwnd_{};
     FilterSettings settings_{};
-    std::function<void(const FilterSettings&)> onApply_;
+    std::function<bool(const FilterSettings&)> onApply_;
     std::function<void()> onClearHistory_;
 };
 
@@ -511,13 +531,14 @@ public:
                 return engine_.history().events();
             })) return false;
         if (!settings_.create(instance_, initialFilters, [this](const FilterSettings& filters) {
-                if (settingsStore_.save(filters)) {
-                    engine_.setFilterSettings(filters);
-                    engine_.setHistoryCapacity(filters.historyCapacity);
-                } else {
-                    MessageBoxW(inputWindow_, L"Could not save settings.",
+                if (!settingsStore_.save(filters)) {
+                    MessageBoxW(inputWindow_, L"Could not save settings. The previous settings remain active.",
                         kAppName, MB_ICONWARNING | MB_OK);
+                    return false;
                 }
+                engine_.setFilterSettings(filters);
+                engine_.setHistoryCapacity(filters.historyCapacity);
+                return true;
             }, [this]() {
                 engine_.clearHistory();
                 if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
