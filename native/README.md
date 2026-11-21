@@ -13,6 +13,7 @@ The native Windows rewrite is developed alongside the original Tauri app. The ex
 From a Visual Studio Developer PowerShell:
 
 ```powershell
+./native/resources/generate-icon.ps1
 cmake -S native -B build/native -A x64
 cmake --build build/native --config Release
 ctest --test-dir build/native -C Release --output-on-failure
