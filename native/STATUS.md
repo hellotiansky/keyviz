@@ -9,6 +9,7 @@
 - Completed: CTest geometry regression coverage at 100%, 150% and 200% DPI scaling
 - Completed: display resolution and device-tree changes trigger a debounced 300 ms overlay rebuild for monitor hot-plug
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
+- Completed: Raw Input packet reads validate copied byte counts and keyboard/mouse payload sizes before decoding
 - Completed: display topology change rebuilds the overlay set
 - Completed: normalized keyboard, mouse button and wheel capture; pointer movement samples are capped at 20 Hz and consecutive movement samples coalesce only within uninterrupted movement runs, preserving intervening button/wheel events and their ordering
 - Completed: pointer overlay labels virtual-desktop coordinates separately from active-monitor-local coordinates, retaining signed negative desktop origins
