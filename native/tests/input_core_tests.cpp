@@ -192,6 +192,12 @@ void removingOneKeyboardPreservesOtherDeviceModifiers() {
     decodeOne(VK_SHIFT, 0x2A, RI_KEY_BREAK, secondKeyboard);
     InputCore::resetKeyboardState();
 }
+void keyboardTranslationPreservesExtendedScanCodePrefixes() {
+    assert(keyviz::keyboardTranslationScanCode(0x1D, false, false) == 0x001D);
+    assert(keyviz::keyboardTranslationScanCode(0x1D, true, false) == 0xE01D);
+    assert(keyviz::keyboardTranslationScanCode(0x45, false, true) == 0xE145);
+}
+
 void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     const wchar_t ordinary[] = L"e";
     assert(keyviz::translatedKeyLabel(1, ordinary, 1, L"Key E") == L"e");
@@ -220,5 +226,6 @@ int main() {
     releasingModifierOnOneKeyboardPreservesTheOtherDevice();
     removingOneKeyboardPreservesOtherDeviceModifiers();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
+    keyboardTranslationPreservesExtendedScanCodePrefixes();
     return 0;
 }
