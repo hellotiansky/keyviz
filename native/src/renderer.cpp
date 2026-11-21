@@ -94,8 +94,8 @@ void Renderer::resize(UINT width, UINT height) noexcept {
     if (FAILED(hr)) discardDeviceResources();
 }
 
-void Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationMs) noexcept {
-    if (!factory_ || !createDeviceResources()) return;
+bool Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationMs) noexcept {
+    if (!factory_ || !createDeviceResources()) return false;
 
     target_->BeginDraw();
     target_->Clear(D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f));
@@ -194,7 +194,11 @@ void Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationM
     const HRESULT hr = target_->EndDraw();
     // Treat every failed EndDraw as a lost target; recreation on the next
     // paint is safer than continuing to draw through a failed device state.
-    if (FAILED(hr)) discardDeviceResources();
+    if (FAILED(hr)) {
+        discardDeviceResources();
+        return false;
+    }
+    return true;
 }
 
 void Renderer::discardDeviceResources() noexcept {
