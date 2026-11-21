@@ -14,11 +14,11 @@ bool InputCore::start(HWND target) noexcept {
     RAWINPUTDEVICE devices[2]{};
     devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
     devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-    devices[0].dwFlags = RIDEV_INPUTSINK;
+    devices[0].dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
     devices[0].hwndTarget = target;
     devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
     devices[1].usUsage = HID_USAGE_GENERIC_MOUSE;
-    devices[1].dwFlags = RIDEV_INPUTSINK;
+    devices[1].dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
     devices[1].hwndTarget = target;
     registered_ = RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE)) == TRUE;
     if (registered_) { haveMousePoint_ = false; lastMouseMoveTick_ = 0; pressedKeys_.fill(false); }
@@ -32,6 +32,25 @@ void InputCore::stop() noexcept {
     RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE));
     registered_ = false; pressedKeys_.fill(false);
 }
+void InputCore::resetKeyboardState() noexcept {
+    pressedKeys_.fill(false);
+}
+
+void InputCore::handleDeviceChange(WPARAM change, HANDLE device) noexcept {
+    if (change != GIDC_REMOVAL) return;
+
+    RID_DEVICE_INFO info{};
+    info.cbSize = sizeof(info);
+    UINT size = sizeof(info);
+    const UINT result = GetRawInputDeviceInfoW(
+        device, RIDI_DEVICEINFO, &info, &size);
+
+    // If device metadata cannot be queried during removal, reset conservatively:
+    // stale modifier state is worse than temporarily losing a held chord.
+    if (result == static_cast<UINT>(-1) || info.dwType == RIM_TYPEKEYBOARD)
+        resetKeyboardState();
+}
+
 bool InputCore::read(HRAWINPUT handle, RAWINPUT& raw) noexcept {
     raw = {};
     UINT size = sizeof(raw);
