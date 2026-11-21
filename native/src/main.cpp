@@ -856,7 +856,13 @@ private:
             }
             break;
         case WM_DESTROY:
-            if (isInputWindow) PostQuitMessage(0);
+            if (isInputWindow) {
+                // Stop capture while the owning window is being torn down,
+                // rather than waiting for the message loop to observe WM_QUIT.
+                // shutdown() calls stop() again safely after the loop exits.
+                self->input_.stop();
+                PostQuitMessage(0);
+            }
             return 0;
         }
         return DefWindowProcW(hwnd, message, wParam, lParam);
