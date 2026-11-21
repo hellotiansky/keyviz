@@ -120,12 +120,20 @@ void removingOneKeyboardPreservesOtherDeviceModifiers() {
 
     decodeOne(VK_CONTROL, 0x1D, 0, firstKeyboard);
     decodeOne(VK_SHIFT, 0x2A, 0, secondKeyboard);
-    InputCore::resetKeyboardState(firstKeyboard);
+    InputCore::handleDeviceChange(GIDC_REMOVAL, firstKeyboard);
 
+    InputCore::handleDeviceChange(GIDC_REMOVAL,
+        reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(3)));
     const auto key = decodeOne('F', 0x21, 0, secondKeyboard);
     assert(key.chordLabel.find(L"Shift + ") == 0);
     assert(key.chordLabel.find(L"Ctrl + ") != 0);
 
+    InputCore::handleDeviceChange(GIDC_REMOVAL, firstKeyboard);
+    const auto secondKey = decodeOne('G', 0x22, 0, secondKeyboard);
+    assert(secondKey.chordLabel.find(L"Shift + ") == 0);
+    assert(secondKey.chordLabel.find(L"Ctrl + ") != 0);
+
+    decodeOne('G', 0x22, RI_KEY_BREAK, secondKeyboard);
     decodeOne('F', 0x21, RI_KEY_BREAK, secondKeyboard);
     decodeOne(VK_SHIFT, 0x2A, RI_KEY_BREAK, secondKeyboard);
     InputCore::resetKeyboardState();
