@@ -30,8 +30,10 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Normalized key press/release, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
-- CTest coverage for history capacity limits, runtime resizing, clearing, and event coalescing
-- Bounded in-memory event history with configurable 40/80/160/320-event retention
+- CTest coverage for history capacity limits, runtime resizing, clearing, event coalescing, and persistence round-trips
+- Bounded event history with configurable 40/80/160/320-event retention
+- Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced and checkpointed every 30 seconds and on clean shutdown
+- Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
 - History retention preference persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
 - Native Win32 settings window; Ctrl+Shift+K shortcut
 - Native input history window; Ctrl+Shift+H shortcut
@@ -44,7 +46,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 ## Known limitations
 - Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
 - Animation is a basic event fade, not yet configurable.
-- Settings persistence, filter editor, configurable in-memory history retention, search and filtering are implemented; event history itself is not persisted across app restarts.
+- A sudden power loss or forced process termination can lose events recorded since the last 30-second history checkpoint.
 - Full keyboard layout/IME and modifier-state semantics remain to be implemented.
 - Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
