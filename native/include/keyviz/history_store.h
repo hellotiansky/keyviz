@@ -24,6 +24,10 @@ public:
         events_.push_front(std::move(event));
         if (events_.size() > capacity_) events_.pop_back();
     }
+    void replaceEvents(std::deque<InputEvent> events) {
+        events_ = std::move(events);
+        while (events_.size() > capacity_) events_.pop_back();
+    }
     const std::deque<InputEvent>& events() const noexcept { return events_; }
     void clear() noexcept { events_.clear(); }
 private:
