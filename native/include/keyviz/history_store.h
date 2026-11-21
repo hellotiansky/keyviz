@@ -2,6 +2,7 @@
 #include "keyviz/input_event.h"
 #include <cstddef>
 #include <deque>
+#include <limits>
 #include <utility>
 namespace keyviz {
 class HistoryStore {
@@ -20,7 +21,9 @@ public:
         if (event.type == InputEvent::Type::KeyDown && event.isRepeat && !events_.empty() &&
             events_.front().type == InputEvent::Type::KeyDown && events_.front().virtualKey == event.virtualKey &&
             events_.front().sourceDevice == event.sourceDevice) {
-            ++events_.front().repeatCount; events_.front().timestamp = event.timestamp;
+            if (events_.front().repeatCount < std::numeric_limits<std::uint32_t>::max())
+                ++events_.front().repeatCount;
+            events_.front().timestamp = event.timestamp;
             events_.front().wallClockMs = event.wallClockMs;
             events_.front().isRepeat = true; return;
         }
