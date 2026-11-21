@@ -679,7 +679,14 @@ private:
             DestroyWindow(hwnd);
             return false;
         }
-        SetLayeredWindowAttributes(hwnd, 0, 242, LWA_ALPHA);
+        // A layered overlay must have its alpha configured before it is
+        // published. Treat failure as an incomplete replacement so the
+        // transactional display rebuild can retain the previous overlay set.
+        if (!SetLayeredWindowAttributes(hwnd, 0, 242, LWA_ALPHA)) {
+            overlay->renderer.shutdown();
+            DestroyWindow(hwnd);
+            return false;
+        }
         overlays_.push_back(std::move(overlay));
         ShowWindow(hwnd, SW_SHOWNOACTIVATE);
         UpdateWindow(hwnd);
