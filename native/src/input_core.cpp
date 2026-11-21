@@ -177,6 +177,12 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
     std::vector<InputEvent> events;
     if (raw.header.dwType == RIM_TYPEKEYBOARD) {
         const RAWKEYBOARD& key = raw.data.keyboard;
+        if (key.MakeCode == KEYBOARD_OVERRUN_MAKE_CODE) {
+            // The device reports lost scan codes; its held-key snapshot is no
+            // longer trustworthy, so discard it rather than leave stuck keys.
+            pressedKeysByDevice_.erase(raw.header.hDevice);
+            return events;
+        }
         if (key.VKey == 255) return events;
         const USHORT vk = normalizedVirtualKey(key);
         if (vk >= 256) return events;
