@@ -1,4 +1,5 @@
 #include "keyviz/input_core.h"
+#include "keyviz/keyboard_translation.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -89,6 +90,19 @@ void releasingOneSideKeepsTheOtherModifierPressed() {
     assert(noLongerControlled.chordLabel.find(L"Ctrl + ") != 0);
     decodeOne('C', 0x2E, RI_KEY_BREAK);
 }
+
+void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
+    const wchar_t ordinary[] = L"e";
+    assert(keyviz::translatedKeyLabel(1, ordinary, 1, L"Key E") == L"e");
+
+    const wchar_t accent[] = L"^";
+    assert(keyviz::translatedKeyLabel(-1, accent, 1, L"Dead key") == L"^ (dead)");
+
+    const wchar_t nonPrintable[] = {L'\\n'};
+    assert(keyviz::translatedKeyLabel(1, nonPrintable, 1, L"Enter") == L"Enter");
+    assert(keyviz::translatedKeyLabel(0, ordinary, 1, L"Key E") == L"Key E");
+    assert(keyviz::translatedKeyLabel(-2, accent, 1, L"Dead key") == L"Dead key");
+}
 } // namespace
 
 int main() {
@@ -97,5 +111,6 @@ int main() {
     altGrTracksRightAltAndControlTogether();
     rightShiftAndRightAltAreTrackedInChords();
     releasingOneSideKeepsTheOtherModifierPressed();
+    translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     return 0;
 }
