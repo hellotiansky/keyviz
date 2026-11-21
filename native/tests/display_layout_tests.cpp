@@ -19,9 +19,9 @@ void assertLogicalBounds(const OverlayBounds& bounds, int dpi) {
 }
 
 int main() {
-    const auto at96 = calculateOverlayBounds(workArea(1), 96);
-    const auto at144 = calculateOverlayBounds(workArea(1) /* overwritten with physical 150% dimensions below */, 144);
-    const auto at192 = calculateOverlayBounds(workArea(2), 192);
+    const auto at96 = calculateOverlayBounds(workArea(96), 96);
+    const auto at144 = calculateOverlayBounds(workArea(144), 144);
+    const auto at192 = calculateOverlayBounds(workArea(192), 192);
 
     assertLogicalBounds(at96, 96);
     // A 150% display has 2880x1620 physical pixels for this logical work area.
@@ -35,7 +35,7 @@ int main() {
     assert(compact.x >= 0);
     assert(compact.y >= 0);
 
-    const auto fallbackDpi = calculateOverlayBounds(workArea(1), 0);
+    const auto fallbackDpi = calculateOverlayBounds(workArea(96), 0);
     assert(fallbackDpi.width == at96.width);
     assert(fallbackDpi.height == at96.height);
     return 0;
