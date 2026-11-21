@@ -725,10 +725,24 @@ private:
         invalidateOverlays();
     }
 
+    void saveHistoryCheckpoint() noexcept {
+        if (historyPath_.empty()) return;
+        if (HistoryPersistence::save(historyPath_, engine_.history())) {
+            historySaveWarningShown_ = false;
+            return;
+        }
+        if (!historySaveWarningShown_) {
+            historySaveWarningShown_ = true;
+            MessageBoxW(inputWindow_,
+                L"Keyviz could not save input history. Check that your user profile folder is writable and has free space.",
+                kAppName, MB_ICONWARNING | MB_OK);
+        }
+    }
+
     void shutdown() noexcept {
         if (shutdown_) return;
         shutdown_ = true;
-        if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
+        saveHistoryCheckpoint();
         if (inputWindow_) {
             removeTrayIcon();
             KillTimer(inputWindow_, kRedrawTimerId);
@@ -816,8 +830,7 @@ private:
                 }
                 self->invalidateOverlays();
             } else if (isInputWindow && wParam == kHistorySaveTimerId) {
-                if (!self->historyPath_.empty())
-                    HistoryPersistence::save(self->historyPath_, self->engine_.history());
+                self->saveHistoryCheckpoint();
             } else if (isInputWindow && wParam == kDisplayRebuildTimerId) {
                 KillTimer(hwnd, kDisplayRebuildTimerId);
                 self->rebuildOverlays();
@@ -852,6 +865,7 @@ private:
     SettingsStore settingsStore_;
     std::wstring historyPath_;
     bool trayIconAdded_{};
+    bool historySaveWarningShown_{};
     bool shutdown_{};
     SettingsWindow settings_;
     HistoryWindow historyWindow_;
