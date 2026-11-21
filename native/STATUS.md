@@ -2,7 +2,7 @@
 
 - Track: Windows-native C++20 rewrite
 - Build: CMake + MSVC x64
-- CI: `.github/workflows/native-windows.yml` (x64 Release build, CTest, executable artifact)
+- CI: `.github/workflows/native-windows.yml` (x64 Release build, CTest, portable executable and Inno Setup installer artifacts)
 - Completed: Win32 overlay and per-monitor DPI awareness request
 - Completed: one independent overlay HWND and Direct2D renderer per enumerated display
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
@@ -16,7 +16,8 @@
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - In progress: robust keyboard layout/modifier handling and configurable animation
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
-- Next: installer packaging and application icon/resources
+- Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
+- Next: application icon/version resources and physical-device validation
 - Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
 
 The original Tauri application remains intact on the base branch.
