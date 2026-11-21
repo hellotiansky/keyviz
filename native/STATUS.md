@@ -9,7 +9,6 @@
 - Completed: CTest geometry regression coverage at 100%, 150% and 200% DPI scaling
 - Completed: display resolution and device-tree changes trigger a debounced 300 ms overlay rebuild for monitor hot-plug
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
-- Completed: Raw Input keyboard removal erases only the matching per-device state entry; no metadata query is needed after Windows invalidates a removed device handle
 - Completed: Raw Input packet reads validate copied byte counts and keyboard/mouse payload sizes before decoding
 - Completed: display topology change rebuilds the overlay set
 - Completed: normalized keyboard, mouse button and wheel capture; pointer movement samples are capped at 20 Hz and consecutive movement samples coalesce only within uninterrupted movement runs, preserving intervening button/wheel events and their ordering
@@ -18,9 +17,11 @@
 - Completed: native settings window, persisted event filters and configurable 40/80/160/320-event history capacity
 - Completed: searchable/filterable history browser, event counts, empty states and filtered UTF-8 CSV export
 - Completed: CTest coverage for history capacity, resizing, clearing, movement coalescing across action boundaries (including refreshed monotonic and wall-clock timestamps), persistence round-trips, mixed-DPI layout, signed multi-monitor pointer coordinates and mouse sampling cadence/tick-wraparound
-- Completed: Raw Input core tests for left/right Ctrl normalization, right Shift/right Alt chord tracking, modifier chord state and AltGr combinations
+- Completed: Raw Input core tests for left/right Ctrl normalization, right Shift/right Alt chord tracking, modifier chord state, AltGr combinations and per-device key repeat
+- Completed: Raw Input keyboard removal erases only the matching per-device state entry without querying potentially invalid device metadata
 - Completed: InputCore test verifies modifier reset clears stale chord state after keyboard removal
-- Completed: capture start/stop resets tracked keyboard modifiers and mouse sampling baselines; CTest covers stop-time modifier reset
+- Completed: capture start/stop resets tracked keyboard modifiers and mouse sampling baselines; CTest covers stop-time reset across multiple keyboard devices
+- Completed: keyboard repeat detection is isolated per Raw Input device; CTest covers independent initial presses, repeats and release/re-press sequences
 - Completed: versioned, bounded event-history persistence with atomic file replacement, 30-second checkpoints and shutdown save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
@@ -40,5 +41,3 @@
 
 The original Tauri application remains intact on the base branch.
 
-
-- Keyboard modifier state is tracked per Raw Input device; only keyboard packets create entries, so device removal directly erases the matching handle without querying potentially invalid device metadata. Unknown removals leave other keyboards untouched.
