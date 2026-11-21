@@ -45,7 +45,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - Bounded event history with configurable 40/80/160/320-event retention
 - Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced and checkpointed every 30 seconds and on clean shutdown
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
-- History retention preference persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
+- History retention and overlay fade duration (0.4/0.8/1.1/1.6 seconds) persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
 - Notification-area tray icon with Settings, Input history and Exit commands
 - Inno Setup per-user x64 installer with Start Menu and optional desktop shortcuts
 - Native Win32 settings window; Ctrl+Shift+K shortcut
@@ -58,14 +58,14 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 
 ## Known limitations
 - Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
-- Animation is a basic event fade, not yet configurable.
+- Overlay fade timing is configurable; richer animation styles and easing remain future work.
 - A sudden power loss or forced process termination can lose events recorded since the last 30-second history checkpoint.
 - Full keyboard layout/IME and modifier-state semantics remain to be implemented.
 - Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
 ## Next milestones
-1. Add robust modifier/keyboard-layout handling and configurable animation.
+1. Improve edge cases in modifier and keyboard-layout handling; expand animation styles.
 2. Add durable history persistence and richer history navigation.
 3. Complete physical-device validation and refine installer branding/resources.
 
