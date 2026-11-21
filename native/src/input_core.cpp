@@ -195,6 +195,7 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
         event.type = keyUp ? InputEvent::Type::KeyUp : InputEvent::Type::KeyDown;
         event.label = localizedKeyName(key);
         event.virtualKey = vk;
+        event.sourceDevice = raw.header.hDevice;
         event.isRepeat = repeat;
         if (!keyUp && !event.label.empty())
             event.chordLabel = chordName(vk, event.label);
