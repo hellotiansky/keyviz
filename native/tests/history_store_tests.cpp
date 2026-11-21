@@ -6,6 +6,7 @@
 #endif
 #include <cassert>
 #include <cstdint>
+#include <limits>
 #include <cstddef>
 #include <utility>
 #include <filesystem>
@@ -127,6 +128,19 @@ void repeatedKeyDownsAreCoalesced() {
     assert(history.events().front().isRepeat);
 }
 
+void repeatCountSaturatesInsteadOfWrapping() {
+    HistoryStore history(4);
+    auto initial = keyEvent('Q', 1);
+    initial.repeatCount = std::numeric_limits<std::uint32_t>::max();
+    history.append(initial);
+
+    history.append(keyEvent('Q', 2, true));
+    assert(history.events().size() == 1);
+    assert(history.events().front().repeatCount ==
+        std::numeric_limits<std::uint32_t>::max());
+    assert(history.events().front().timestamp == 2);
+}
+
 void repeatedKeysFromDifferentKeyboardsAreNotMerged() {
     const HANDLE firstKeyboard =
         reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(101));
@@ -228,6 +242,7 @@ int main() {
     mouseMovementSamplesAreCoalesced();
     movementCoalescingPreservesInterveningActions();
     repeatedKeyDownsAreCoalesced();
+    repeatCountSaturatesInsteadOfWrapping();
     repeatedKeysFromDifferentKeyboardsAreNotMerged();
     clearRemovesAllEvents();
     persistenceRoundTripsEventsAndHonorsCapacity();
