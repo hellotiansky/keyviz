@@ -10,6 +10,8 @@ public:
     bool start(HWND target) noexcept;
     void stop() noexcept;
     static bool read(HRAWINPUT handle, RAWINPUT& raw) noexcept;
+    static void handleDeviceChange(WPARAM change, HANDLE device) noexcept;
+    static void resetKeyboardState() noexcept;
     static std::vector<InputEvent> decode(const RAWINPUT& raw);
     static std::wstring keyName(const RAWKEYBOARD& key);
 private:
