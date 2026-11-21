@@ -358,6 +358,35 @@ void failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile() {
     std::filesystem::remove(temporary, error);
 }
 
+void oversizedStringRejectsSaveAndPreservesExistingFile() {
+    const auto target = std::filesystem::temp_directory_path() /
+        (L"keyviz-history-oversized-string-" + std::to_wstring(GetCurrentProcessId()) + L".bin");
+    const auto temporary = std::filesystem::path(target.wstring() + L"." +
+        std::to_wstring(GetCurrentProcessId()) + L".tmp");
+    std::error_code error;
+    std::filesystem::remove(target, error);
+    std::filesystem::remove(temporary, error);
+
+    HistoryStore valid(4);
+    valid.append(keyEvent('V', 1));
+    assert(keyviz::HistoryPersistence::save(target.wstring(), valid));
+
+    HistoryStore invalid(4);
+    auto oversized = keyEvent('X', 2);
+    oversized.label.assign(4097, L'x');
+    invalid.append(std::move(oversized));
+    assert(!keyviz::HistoryPersistence::save(target.wstring(), invalid));
+    assert(!std::filesystem::exists(temporary));
+
+    HistoryStore restored(4);
+    assert(keyviz::HistoryPersistence::load(target.wstring(), restored));
+    assert(restored.events().size() == 1);
+    assert(restored.events().front().virtualKey == 'V');
+
+    std::filesystem::remove(target, error);
+    std::filesystem::remove(temporary, error);
+}
+
 void clearRemovesAllEvents() {
     HistoryStore history(4);
     history.append(keyEvent('A', 1));
@@ -381,5 +410,6 @@ int main() {
     trailingPersistenceDataDoesNotReplaceExistingHistory();
     futureWallClockTimestampRebasesWithoutArtificialAge();
     failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile();
+    oversizedStringRejectsSaveAndPreservesExistingFile();
     return 0;
 }
