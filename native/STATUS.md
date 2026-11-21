@@ -1,0 +1,53 @@
+# Native rewrite status
+
+- Track: Windows-native C++20 rewrite
+- Build: CMake + MSVC x64
+- CI: `.github/workflows/native-windows.yml` (x64 Release build, CTest, portable executable and Inno Setup installer artifacts)
+- Completed: Win32 overlay and per-monitor DPI awareness request
+- Completed: one independent overlay HWND and Direct2D renderer per enumerated display
+- Completed: every Direct2D/DirectWrite initialization failure releases all partially created COM resources and clears the HWND association; resize and EndDraw failures discard target-dependent brushes and render targets, with failed paints retried on a bounded one-second timer
+- Completed: overlay geometry uses each monitor's effective DPI, preserving a 580×156-DIP panel and 36-DIP bottom margin across mixed-scale displays
+- Completed: CTest geometry regression coverage at 100%, 150% and 200% DPI scaling
+- Completed: display resolution and device-tree changes trigger a debounced 300 ms overlay rebuild for monitor hot-plug
+- Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
+- Completed: Raw Input packet reads validate copied byte counts and keyboard/mouse payload sizes before decoding
+- Completed: Raw Input keyboard decoding ignores invalid virtual-key sentinels without disturbing held modifiers; keyboard scan-code overrun markers clear only the affected device's unreliable held-key state, with CTest regression coverage
+- Completed: display topology changes rebuild the overlay set transactionally; replacement windows remain hidden until every monitor and renderer is ready, then publish together; the previous visible overlays remain active if monitor enumeration, replacement overlay creation, or layered-window alpha configuration fails, and failed runtime rebuilds retry after one second
+- Completed: normalized keyboard, mouse button and wheel capture; pointer movement samples are capped at 20 Hz and consecutive movement samples coalesce only within uninterrupted movement runs, preserving intervening button/wheel events and their ordering
+- Completed: Raw Input wheel direction uses the signed wheel delta; zero-delta vertical/horizontal wheel packets are ignored, with pure-helper CTest coverage
+- Completed: pointer overlay labels virtual-desktop coordinates separately from active-monitor-local coordinates, retaining signed negative desktop origins
+- Completed: InputEvent, FilterEngine, HistoryStore and EventEngine modules
+- Completed: native settings window, persisted event filters and configurable 40/80/160/320-event history capacity
+- Completed: settings Apply is transactional from the UI's perspective; failed persistence leaves runtime settings unchanged and restores the controls to the last saved values
+- Completed: clearing history first atomically persists an empty snapshot; if that save fails, the existing in-memory and on-disk history are retained
+- Completed: profile API settings writes are explicitly flushed before Apply reports success
+- Completed: searchable/filterable history browser, event counts, empty states and filtered UTF-8 CSV export; export explicitly flushes and closes the stream before reporting success so delayed disk-write failures are surfaced
+- Completed: CTest coverage for history capacity, resizing, clearing, movement coalescing across action boundaries (including refreshed monotonic and wall-clock timestamps), persistence round-trips, truncated-file, oversized-record-count, invalid-event-type and trailing-data rejection without replacing live history, oversized-string save rejection with existing-file preservation and temporary-file cleanup, failed atomic-replacement preservation and temporary-file cleanup, future wall-clock timestamp rebasing, repeat-counter saturation, mixed-DPI layout, signed multi-monitor pointer coordinates and mouse sampling cadence/tick-wraparound
+- Completed: Raw Input core tests for left/right Ctrl normalization, right Shift/right Alt chord tracking, modifier chord state, AltGr combinations per-device key repeat, and shared modifier holds across keyboards
+- Completed: Raw Input keyboard removal erases only the matching per-device state entry without querying potentially invalid device metadata; tests cover unrelated arrivals and releases on one keyboard while another still holds the same modifier and a reconnect/reused-handle press starting a fresh repeat sequence
+- Completed: InputCore test verifies modifier reset clears stale chord state after keyboard removal
+- Completed: capture start/stop resets tracked keyboard modifiers and mouse sampling baselines; CTest covers stop-time reset across multiple keyboard devices
+- Completed: Raw Input capture start rejects null or destroyed sink HWNDs, stops any prior active session before restart, and unregisters both keyboard and mouse usages if combined registration fails
+- Completed: keyboard repeat detection is isolated per Raw Input device; CTest covers independent initial presses, repeats and release/re-press sequences
+- Completed: decoded keyboard events retain their runtime Raw Input device identity so history repeat coalescing cannot attribute one keyboard's repeats to another keyboard; CTest covers interleaved same-key presses across devices
+- Completed: settings and history persistence reject missing/empty `LOCALAPPDATA` instead of falling back to a relative working-directory path; CTest covers the missing-environment case
+- Completed: versioned, bounded event-history persistence with atomic file replacement, failed-save temporary-file cleanup, process-scoped temporary names and checked stream close, 30-second checkpoints and shutdown save; checkpoint and shutdown save failures now produce a one-time warning that resets after a successful save
+- Completed: notification-area tray icon with settings/history shortcuts and clean exit
+- Completed: App teardown is idempotent and also runs after partial initialization failures; owned settings/history top-level windows, Raw Input registration, timers, tray icon and overlays are explicitly released; Raw Input is unregistered immediately in the input owner's WM_DESTROY path, with the later shutdown call remaining idempotent
+- Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
+- Completed: key translation now uses the app's tracked Raw Input modifier state (including left/right modifiers and AltGr state)
+- Completed: E0 and E1 extended scan-code prefixes are passed to keyboard-layout translation, with CTest coverage for standard, E0 and E1 scan codes; Pause and Print Screen use stable explicit labels with regression coverage
+- Completed: printable dead-key accents are surfaced with a `(dead)` label without consuming layout composition state
+- Completed: keyboard translation label formatting is locale-independent and unit-tested for ASCII/CJK text, UTF-16 surrogate pairs, control-character fallback, dead-key accents, null buffers and oversized translation lengths
+- Documented: IME integration options and privacy boundary in `native/docs/IME_AND_TEXT_INPUT.md`
+- In progress: physical validation of foreground-thread layout switching, dead-key composition preservation, no-foreground fallback, AltGr and E0/E1 keys; richer animation styles
+- IME limitation: global composition and committed-text capture remain intentionally unsupported; do not read arbitrary foreground document text or inject hooks into other processes
+- Persistence limitation: forced termination can lose events since the last 30-second checkpoint
+- Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
+- Completed: embedded Windows file/product version metadata for the native executable
+- Completed: branded multi-size Windows icon generated reproducibly from PowerShell and embedded in the executable and notification-area icon
+- Next: physical-device validation, including dead-key and IME coexistence
+- Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
+
+The original Tauri application remains intact on the base branch.
+
