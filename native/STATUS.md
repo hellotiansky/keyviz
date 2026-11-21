@@ -5,7 +5,7 @@
 - CI: `.github/workflows/native-windows.yml` (x64 Release build, CTest, portable executable and Inno Setup installer artifacts)
 - Completed: Win32 overlay and per-monitor DPI awareness request
 - Completed: one independent overlay HWND and Direct2D renderer per enumerated display
-- Completed: Direct2D initialization failures release all partially created COM resources and clear the HWND association; resize and EndDraw failures discard target-dependent brushes and render targets so a later paint can recreate a complete device-resource set
+- Completed: every Direct2D/DirectWrite initialization failure releases all partially created COM resources and clears the HWND association; resize and EndDraw failures discard target-dependent brushes and render targets so a later paint can recreate a complete device-resource set
 - Completed: overlay geometry uses each monitor's effective DPI, preserving a 580×156-DIP panel and 36-DIP bottom margin across mixed-scale displays
 - Completed: CTest geometry regression coverage at 100%, 150% and 200% DPI scaling
 - Completed: display resolution and device-tree changes trigger a debounced 300 ms overlay rebuild for monitor hot-plug
