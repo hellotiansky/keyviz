@@ -5,14 +5,14 @@
 - CI: `.github/workflows/native-windows.yml` (x64 Release build, CTest, portable executable and Inno Setup installer artifacts)
 - Completed: Win32 overlay and per-monitor DPI awareness request
 - Completed: one independent overlay HWND and Direct2D renderer per enumerated display
-- Completed: every Direct2D/DirectWrite initialization failure releases all partially created COM resources and clears the HWND association; resize and EndDraw failures discard target-dependent brushes and render targets so a later paint can recreate a complete device-resource set
+- Completed: every Direct2D/DirectWrite initialization failure releases all partially created COM resources and clears the HWND association; resize and EndDraw failures discard target-dependent brushes and render targets, with failed paints retried on a bounded one-second timer
 - Completed: overlay geometry uses each monitor's effective DPI, preserving a 580×156-DIP panel and 36-DIP bottom margin across mixed-scale displays
 - Completed: CTest geometry regression coverage at 100%, 150% and 200% DPI scaling
 - Completed: display resolution and device-tree changes trigger a debounced 300 ms overlay rebuild for monitor hot-plug
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
 - Completed: Raw Input packet reads validate copied byte counts and keyboard/mouse payload sizes before decoding
 - Completed: Raw Input keyboard decoding ignores invalid virtual-key sentinels without disturbing held modifiers; keyboard scan-code overrun markers clear only the affected device's unreliable held-key state, with CTest regression coverage
-- Completed: display topology changes rebuild the overlay set transactionally; replacement windows remain hidden until every monitor and renderer is ready, then publish together; the previous visible overlays remain active if monitor enumeration, replacement overlay creation, or layered-window alpha configuration fails
+- Completed: display topology changes rebuild the overlay set transactionally; replacement windows remain hidden until every monitor and renderer is ready, then publish together; the previous visible overlays remain active if monitor enumeration, replacement overlay creation, or layered-window alpha configuration fails, and failed runtime rebuilds retry after one second
 - Completed: normalized keyboard, mouse button and wheel capture; pointer movement samples are capped at 20 Hz and consecutive movement samples coalesce only within uninterrupted movement runs, preserving intervening button/wheel events and their ordering
 - Completed: Raw Input wheel direction uses the signed wheel delta; zero-delta vertical/horizontal wheel packets are ignored, with pure-helper CTest coverage
 - Completed: pointer overlay labels virtual-desktop coordinates separately from active-monitor-local coordinates, retaining signed negative desktop origins
