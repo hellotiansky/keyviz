@@ -74,7 +74,6 @@ public:
         if (!readValue(input, count) || count > 320) return false;
 
         std::deque<InputEvent> loaded;
-        loaded.reserve(count);
         for (std::uint32_t i = 0; i < count; ++i) {
             InputEvent event;
             std::uint32_t type = 0;
