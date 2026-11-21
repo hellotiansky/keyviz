@@ -77,8 +77,13 @@ bool Renderer::createDeviceResources() noexcept {
 void Renderer::resize(UINT width, UINT height) noexcept {
     width_ = width;
     height_ = height;
-    if (target_) target_->Resize(D2D1::SizeU(
+    if (!target_) return;
+
+    const HRESULT hr = target_->Resize(D2D1::SizeU(
         std::max<UINT>(1, width), std::max<UINT>(1, height)));
+    // A failed resize can leave the HWND target unusable. Drop all
+    // target-dependent brushes so the next render recreates them together.
+    if (FAILED(hr)) discardDeviceResources();
 }
 
 void Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationMs) noexcept {
@@ -179,7 +184,9 @@ void Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationM
     }
 
     const HRESULT hr = target_->EndDraw();
-    if (hr == D2DERR_RECREATE_TARGET) discardDeviceResources();
+    // Treat every failed EndDraw as a lost target; recreation on the next
+    // paint is safer than continuing to draw through a failed device state.
+    if (FAILED(hr)) discardDeviceResources();
 }
 
 void Renderer::discardDeviceResources() noexcept {
