@@ -540,8 +540,16 @@ public:
                 engine_.setHistoryCapacity(filters.historyCapacity);
                 return true;
             }, [this]() {
+                if (!historyPath_.empty()) {
+                    HistoryStore emptyHistory(engine_.history().capacity());
+                    if (!HistoryPersistence::save(historyPath_, emptyHistory)) {
+                        MessageBoxW(inputWindow_,
+                            L"Could not clear saved history. Existing history remains unchanged.",
+                            kAppName, MB_ICONWARNING | MB_OK);
+                        return;
+                    }
+                }
                 engine_.clearHistory();
-                if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
                 historyWindow_.refresh();
                 KillTimer(inputWindow_, kRedrawTimerId);
                 invalidateOverlays();
