@@ -152,28 +152,56 @@ std::vector<InputEvent> InputCore::decode(const RAWINPUT& raw) {
     if (raw.header.dwType != RIM_TYPEMOUSE) return events;
     const RAWMOUSE& mouse = raw.data.mouse;
     const USHORT flags = mouse.usButtonFlags;
-    const auto addButton = [&events, flags](USHORT downFlag, USHORT upFlag, const wchar_t* label) {
-        if (downFlag && (flags & downFlag)) events.push_back({InputEvent::Type::MouseDown, label, 0});
-        if (upFlag && (flags & upFlag)) events.push_back({InputEvent::Type::MouseUp, label, 0});
+    POINT cursorPoint{};
+    const bool haveCursorPoint = GetCursorPos(&cursorPoint) != FALSE;
+    const auto appendPointerEvent = [&events, &cursorPoint, haveCursorPoint](
+        InputEvent::Type type, const wchar_t* label) {
+        InputEvent event{};
+        event.type = type;
+        event.label = label;
+        if (haveCursorPoint) {
+            event.screenX = cursorPoint.x;
+            event.screenY = cursorPoint.y;
+        }
+        events.push_back(std::move(event));
+    };
+    const auto addButton = [&appendPointerEvent, flags](
+        USHORT downFlag, USHORT upFlag, const wchar_t* label) {
+        if (downFlag && (flags & downFlag))
+            appendPointerEvent(InputEvent::Type::MouseDown, label);
+        if (upFlag && (flags & upFlag))
+            appendPointerEvent(InputEvent::Type::MouseUp, label);
     };
     addButton(RI_MOUSE_LEFT_BUTTON_DOWN, RI_MOUSE_LEFT_BUTTON_UP, L"Left");
     addButton(RI_MOUSE_RIGHT_BUTTON_DOWN, RI_MOUSE_RIGHT_BUTTON_UP, L"Right");
     addButton(RI_MOUSE_MIDDLE_BUTTON_DOWN, RI_MOUSE_MIDDLE_BUTTON_UP, L"Middle");
     addButton(RI_MOUSE_BUTTON_4_DOWN, RI_MOUSE_BUTTON_4_UP, L"X1");
     addButton(RI_MOUSE_BUTTON_5_DOWN, RI_MOUSE_BUTTON_5_UP, L"X2");
-    if (flags & RI_MOUSE_WHEEL) { const SHORT d = static_cast<SHORT>(mouse.usButtonData); events.push_back({InputEvent::Type::Wheel, d > 0 ? L"Wheel Up" : L"Wheel Down", 0}); }
-    if (flags & RI_MOUSE_HWHEEL) { const SHORT d = static_cast<SHORT>(mouse.usButtonData); events.push_back({InputEvent::Type::Wheel, d > 0 ? L"Wheel Right" : L"Wheel Left", 0}); }
-    if ((mouse.usFlags & MOUSE_MOVE_ABSOLUTE) || mouse.lLastX != 0 || mouse.lLastY != 0) {
-        POINT point{};
-        if (GetCursorPos(&point)) {
-            const DWORD now = GetTickCount();
-            if (shouldSampleMouseMove(haveMousePoint_,
-                    lastMousePoint_.x, lastMousePoint_.y, lastMouseMoveTick_,
-                    point.x, point.y, now)) {
-                InputEvent move{}; move.type = InputEvent::Type::MouseMove; move.label = L"Pointer";
-                move.screenX = point.x; move.screenY = point.y; events.push_back(std::move(move));
-                lastMousePoint_ = point; haveMousePoint_ = true; lastMouseMoveTick_ = now;
-            }
+    if (flags & RI_MOUSE_WHEEL) {
+        const SHORT delta = static_cast<SHORT>(mouse.usButtonData);
+        appendPointerEvent(InputEvent::Type::Wheel,
+            delta > 0 ? L"Wheel Up" : L"Wheel Down");
+    }
+    if (flags & RI_MOUSE_HWHEEL) {
+        const SHORT delta = static_cast<SHORT>(mouse.usButtonData);
+        appendPointerEvent(InputEvent::Type::Wheel,
+            delta > 0 ? L"Wheel Right" : L"Wheel Left");
+    }
+    if (haveCursorPoint &&
+        ((mouse.usFlags & MOUSE_MOVE_ABSOLUTE) || mouse.lLastX != 0 || mouse.lLastY != 0)) {
+        const DWORD now = GetTickCount();
+        if (shouldSampleMouseMove(haveMousePoint_,
+                lastMousePoint_.x, lastMousePoint_.y, lastMouseMoveTick_,
+                cursorPoint.x, cursorPoint.y, now)) {
+            InputEvent move{};
+            move.type = InputEvent::Type::MouseMove;
+            move.label = L"Pointer";
+            move.screenX = cursorPoint.x;
+            move.screenY = cursorPoint.y;
+            events.push_back(std::move(move));
+            lastMousePoint_ = cursorPoint;
+            haveMousePoint_ = true;
+            lastMouseMoveTick_ = now;
         }
     }
     return events;
