@@ -5,6 +5,7 @@
 - CI: `.github/workflows/native-windows.yml` (x64 Release build, CTest, portable executable and Inno Setup installer artifacts)
 - Completed: Win32 overlay and per-monitor DPI awareness request
 - Completed: one independent overlay HWND and Direct2D renderer per enumerated display
+- Completed: display resolution and device-tree changes trigger a debounced 300 ms overlay rebuild for monitor hot-plug
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
 - Completed: display topology change rebuilds the overlay set
 - Completed: normalized keyboard, mouse button and wheel capture; sampled mouse movement
