@@ -15,7 +15,8 @@
 - Completed: versioned, bounded event-history persistence with atomic file replacement, 30-second checkpoints and shutdown save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
-- In progress: additional keyboard layout/modifier edge cases and richer animation styles
+- Completed: key translation now uses the app's tracked Raw Input modifier state (including left/right modifiers and AltGr state)
+- In progress: IME/dead-key presentation, remaining keyboard-layout edge cases and richer animation styles
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
 - Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
 - Completed: embedded Windows file/product version metadata for the native executable
