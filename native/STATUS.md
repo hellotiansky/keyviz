@@ -18,12 +18,14 @@
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
 - Completed: key translation now uses the app's tracked Raw Input modifier state (including left/right modifiers and AltGr state)
 - Completed: E0 extended scan-code prefix is passed to keyboard-layout translation
-- In progress: IME/dead-key presentation, remaining keyboard-layout edge cases and richer animation styles
-- IME limitation: the hidden Raw Input owner does not receive the foreground application's committed IME text; proper text capture requires a separate text-input integration and is not claimed as implemented
+- Completed: printable dead-key accents are surfaced with a `(dead)` label without consuming layout composition state
+- Documented: IME integration options and privacy boundary in `native/docs/IME_AND_TEXT_INPUT.md`
+- In progress: locale-specific dead-key sequences, remaining keyboard-layout edge cases and richer animation styles
+- IME limitation: global composition and committed-text capture remain intentionally unsupported; do not read arbitrary foreground document text or inject hooks into other processes
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
 - Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
 - Completed: embedded Windows file/product version metadata for the native executable
-- Next: application icon/version resources and physical-device validation
+- Next: application icon and physical-device validation, including dead-key and IME coexistence
 - Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
 
 The original Tauri application remains intact on the base branch.
