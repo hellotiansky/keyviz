@@ -144,6 +144,7 @@ private:
                 if (capacity >= 0 && capacity < 4)
                     next.historyCapacity = capacities[capacity];
                 if (self->onApply_) self->onApply_(next);
+                self->settings_ = next;
                 return 0;
             }
             if (LOWORD(wParam) == kClearHistoryId) {
@@ -441,6 +442,7 @@ public:
         if (!registerWindowClasses()) return false;
         const auto initialFilters = settingsStore_.load();
         engine_.setFilterSettings(initialFilters);
+        engine_.setHistoryCapacity(initialFilters.historyCapacity);
 
         // A single hidden top-level window owns Raw Input and the global hotkey.
         // Overlay windows are presentation-only and never register input devices.
