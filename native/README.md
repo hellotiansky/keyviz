@@ -35,6 +35,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Versioned history file in `%LOCALAPPDATA%\\Keyviz\\history.bin`, atomically replaced and checkpointed every 30 seconds and on clean shutdown
 - Persisted wall-clock timestamps are rebased to the current process tick count when loaded, keeping history ages and overlay expiry valid across restarts
 - History retention preference persisted in `%LOCALAPPDATA%\Keyviz\settings.ini`
+- Notification-area tray icon with Settings, Input history and Exit commands
 - Native Win32 settings window; Ctrl+Shift+K shortcut
 - Native input history window; Ctrl+Shift+H shortcut
 - History search with case-insensitive key/chord matching and event-type filters
