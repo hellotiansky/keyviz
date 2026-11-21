@@ -58,6 +58,13 @@ bool InputCore::isKeyPressed(USHORT virtualKey) noexcept {
 }
 
 void InputCore::handleDeviceChange(WPARAM change, HANDLE device) noexcept {
+    // A newly arrived device can reuse an opaque handle whose previous
+    // removal notification was missed. Reset only that handle so it cannot
+    // inherit stale modifiers or repeat state from the earlier device.
+    if (change == GIDC_ARRIVAL) {
+        pressedKeysByDevice_.erase(device);
+        return;
+    }
     if (change != GIDC_REMOVAL) return;
 
     // Only keyboard packets create entries in pressedKeysByDevice_. Remove
