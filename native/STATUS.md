@@ -18,6 +18,7 @@
 - Completed: InputEvent, FilterEngine, HistoryStore and EventEngine modules
 - Completed: native settings window, persisted event filters and configurable 40/80/160/320-event history capacity
 - Completed: settings Apply is transactional from the UI's perspective; failed persistence leaves runtime settings unchanged and restores the controls to the last saved values
+- Completed: clearing history first atomically persists an empty snapshot; if that save fails, the existing in-memory and on-disk history are retained
 - Completed: profile API settings writes are explicitly flushed before Apply reports success
 - Completed: searchable/filterable history browser, event counts, empty states and filtered UTF-8 CSV export
 - Completed: CTest coverage for history capacity, resizing, clearing, movement coalescing across action boundaries (including refreshed monotonic and wall-clock timestamps), persistence round-trips, truncated-file, oversized-record-count, invalid-event-type and trailing-data rejection without replacing live history, oversized-string save rejection with existing-file preservation and temporary-file cleanup, failed atomic-replacement preservation and temporary-file cleanup, future wall-clock timestamp rebasing, repeat-counter saturation, mixed-DPI layout, signed multi-monitor pointer coordinates and mouse sampling cadence/tick-wraparound
