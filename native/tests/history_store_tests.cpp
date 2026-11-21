@@ -229,6 +229,50 @@ void truncatedPersistenceDoesNotReplaceExistingHistory() {
     std::filesystem::remove(path, error);
 }
 
+void trailingPersistenceDataDoesNotReplaceExistingHistory() {
+    const auto path = (std::filesystem::temp_directory_path() /
+        (L"keyviz-history-trailing-" + std::to_wstring(GetCurrentProcessId()) + L".bin")).wstring();
+    HistoryStore saved(4);
+    saved.append(keyEvent('A', 1));
+    assert(keyviz::HistoryPersistence::save(path, saved));
+    {
+        std::ofstream output(path, std::ios::binary | std::ios::app);
+        const char unexpected = 'X';
+        output.write(&unexpected, 1);
+        assert(static_cast<bool>(output));
+    }
+
+    HistoryStore existing(4);
+    existing.append(keyEvent('Z', 99));
+    assert(!keyviz::HistoryPersistence::load(path, existing));
+    assert(existing.events().size() == 1);
+    assert(existing.events().front().virtualKey == 'Z');
+
+    std::error_code error;
+    std::filesystem::remove(path, error);
+}
+
+void futureWallClockTimestampRebasesWithoutArtificialAge() {
+    const auto path = (std::filesystem::temp_directory_path() /
+        (L"keyviz-history-future-time-" + std::to_wstring(GetCurrentProcessId()) + L".bin")).wstring();
+    HistoryStore original(4);
+    auto event = keyEvent('F', 0);
+    event.wallClockMs = static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count()) + 3600000;
+    original.append(event);
+    assert(keyviz::HistoryPersistence::save(path, original));
+
+    HistoryStore restored(4);
+    assert(keyviz::HistoryPersistence::load(path, restored));
+    assert(restored.events().size() == 1);
+    const DWORD elapsed = GetTickCount() - restored.events().front().timestamp;
+    assert(elapsed < 2000);
+
+    std::error_code error;
+    std::filesystem::remove(path, error);
+}
+
 void failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile() {
     const auto target = std::filesystem::temp_directory_path() /
         (L"keyviz-history-replace-failure-" + std::to_wstring(GetCurrentProcessId()));
@@ -274,6 +318,8 @@ int main() {
     clearRemovesAllEvents();
     persistenceRoundTripsEventsAndHonorsCapacity();
     truncatedPersistenceDoesNotReplaceExistingHistory();
+    trailingPersistenceDataDoesNotReplaceExistingHistory();
+    futureWallClockTimestampRebasesWithoutArtificialAge();
     failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile();
     return 0;
 }
