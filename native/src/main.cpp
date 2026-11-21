@@ -29,6 +29,7 @@ constexpr int kSettingsButtonId = 100;
 constexpr int kSettingsHotkeyId = 1;
 constexpr int kHistoryHotkeyId = 2;
 constexpr UINT_PTR kRedrawTimerId = 2;
+constexpr UINT_PTR kHistorySaveTimerId = 3;
 
 class SettingsWindow {
 public:
@@ -453,6 +454,7 @@ public:
             WS_EX_TOOLWINDOW, kInputClass, kAppName, WS_POPUP,
             0, 0, 0, 0, nullptr, nullptr, instance_, this);
         if (!inputWindow_) return false;
+        SetTimer(inputWindow_, kHistorySaveTimerId, 30000, nullptr);
 
         if (!input_.start(inputWindow_)) {
             MessageBoxW(nullptr,
@@ -603,6 +605,7 @@ private:
         if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
         if (inputWindow_) {
             KillTimer(inputWindow_, kRedrawTimerId);
+            KillTimer(inputWindow_, kHistorySaveTimerId);
             UnregisterHotKey(inputWindow_, kSettingsHotkeyId);
             UnregisterHotKey(inputWindow_, kHistoryHotkeyId);
         }
@@ -661,6 +664,9 @@ private:
                     KillTimer(hwnd, kRedrawTimerId);
                 }
                 self->invalidateOverlays();
+            } else if (isInputWindow && wParam == kHistorySaveTimerId) {
+                if (!self->historyPath_.empty())
+                    HistoryPersistence::save(self->historyPath_, self->engine_.history());
             }
             return 0;
         case WM_DISPLAYCHANGE:
