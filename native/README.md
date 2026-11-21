@@ -38,7 +38,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 - Monitor-aware placement inside each display's work area
 - A single hidden top-level input window owns keyboard and mouse Raw Input registration
 - Input events are shared through one event engine and redrawn on every monitor overlay
-- Display topology changes trigger overlay teardown and recreation
+- Display resolution changes and device-tree notifications schedule a debounced (300 ms) overlay rebuild, covering monitor hot-plug and topology changes
 - Normalized key press/release with tracked left/right modifier state, foreground keyboard-layout translation including E0-prefixed extended scan codes and visible dead-key accents, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
