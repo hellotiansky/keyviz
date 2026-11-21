@@ -10,6 +10,7 @@
 #include <utility>
 #include <filesystem>
 #include <chrono>
+#include <fstream>
 
 using keyviz::HistoryStore;
 using keyviz::InputEvent;
@@ -173,6 +174,7 @@ void persistenceRoundTripsEventsAndHonorsCapacity() {
     newest.wallClockMs = static_cast<std::uint64_t>(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count());
+    newest.sourceDevice = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(303));
     original.append(keyEvent('A', 10));
     original.append(newest);
 
@@ -183,6 +185,32 @@ void persistenceRoundTripsEventsAndHonorsCapacity() {
     assert(restored.events().front().virtualKey == 'B');
     assert(restored.events().front().label == L"Ctrl + B");
     assert(restored.events().front().chordLabel == L"Ctrl+B");
+    // Raw Input handles are process-local runtime identity and must not survive persistence.
+    assert(restored.events().front().sourceDevice == nullptr);
+    std::error_code error;
+    std::filesystem::remove(path, error);
+}
+
+
+void truncatedPersistenceDoesNotReplaceExistingHistory() {
+    const auto path = (std::filesystem::temp_directory_path() /
+        (L"keyviz-history-truncated-" + std::to_wstring(GetCurrentProcessId()) + L".bin")).wstring();
+    {
+        std::ofstream output(path, std::ios::binary | std::ios::trunc);
+        constexpr char magic[] = "KVZHIST1";
+        output.write(magic, sizeof(magic) - 1);
+        const std::uint32_t count = 1;
+        output.write(reinterpret_cast<const char*>(&count), sizeof(count));
+        // The declared event record is intentionally absent.
+        assert(static_cast<bool>(output));
+    }
+
+    HistoryStore existing(4);
+    existing.append(keyEvent('Z', 99));
+    assert(!keyviz::HistoryPersistence::load(path, existing));
+    assert(existing.events().size() == 1);
+    assert(existing.events().front().virtualKey == 'Z');
+
     std::error_code error;
     std::filesystem::remove(path, error);
 }
@@ -203,5 +231,6 @@ int main() {
     repeatedKeysFromDifferentKeyboardsAreNotMerged();
     clearRemovesAllEvents();
     persistenceRoundTripsEventsAndHonorsCapacity();
+    truncatedPersistenceDoesNotReplaceExistingHistory();
     return 0;
 }
