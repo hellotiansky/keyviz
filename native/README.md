@@ -29,7 +29,8 @@ Output: `build/native/Release/KeyvizNative.exe`.
 - Normalized key press/release, left/right/middle/X1/X2 mouse buttons, vertical and horizontal wheel events
 - Mouse movement sampling with unified virtual-desktop cursor coordinates; samples are coalesced in history
 - Extracted InputEvent, FilterEngine, HistoryStore and EventEngine modules
-- Bounded in-memory event history
+- Bounded in-memory event history with configurable 40/80/160/320-event retention
+- History retention preference persisted in `%LOCALAPPDATA%\\Keyviz\\settings.ini`
 - Native Win32 settings window; Ctrl+Shift+K shortcut
 - Native input history window; Ctrl+Shift+H shortcut
 - History search with case-insensitive key/chord matching and event-type filters
@@ -41,14 +42,14 @@ Output: `build/native/Release/KeyvizNative.exe`.
 ## Known limitations
 - Runtime behavior still needs testing on physical multi-monitor Windows 10 systems, including mixed-DPI and hot-plug configurations.
 - Animation is a basic event fade, not yet configurable.
-- Settings persistence and filter editor are implemented; history search/filtering is available, but long-term history persistence is not implemented.
+- Settings persistence, filter editor, configurable in-memory history retention, search and filtering are implemented; event history itself is not persisted across app restarts.
 - Full keyboard layout/IME and modifier-state semantics remain to be implemented.
 - Pointer coordinates are virtual-desktop screen coordinates; per-monitor local coordinate presentation is not yet configurable.
 - The Direct2D HWND target uses global layered-window opacity, not per-pixel transparency.
 
 ## Next milestones
 1. Add robust modifier/keyboard-layout handling and configurable animation.
-2. Add configurable history retention and richer history navigation.
+2. Add durable history persistence and richer history navigation.
 3. Add tray integration and installer packaging.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
