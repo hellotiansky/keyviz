@@ -104,12 +104,42 @@ void resettingKeyboardStateClearsStaleModifiers() {
 
 void stoppingCaptureClearsTrackedModifiers() {
     InputCore input;
-    decodeOne(VK_CONTROL, 0x1D);
+    const HANDLE firstKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(11));
+    const HANDLE secondKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(12));
+    decodeOne(VK_CONTROL, 0x1D, 0, firstKeyboard);
+    decodeOne(VK_SHIFT, 0x2A, 0, secondKeyboard);
     input.stop();
 
-    const auto key = decodeOne('E', 0x12);
+    const HANDLE nextKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(13));
+    const auto key = decodeOne('E', 0x12, 0, nextKeyboard);
     assert(key.chordLabel.find(L"Ctrl + ") != 0);
-    decodeOne('E', 0x12, RI_KEY_BREAK);
+    assert(key.chordLabel.find(L"Shift + ") != 0);
+    decodeOne('E', 0x12, RI_KEY_BREAK, nextKeyboard);
+}
+
+void repeatedKeysAreTrackedIndependentlyPerKeyboard() {
+    const HANDLE firstKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(21));
+    const HANDLE secondKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(22));
+    InputCore::resetKeyboardState();
+
+    const auto firstDown = decodeOne('A', 0x1E, 0, firstKeyboard);
+    const auto secondDown = decodeOne('A', 0x1E, 0, secondKeyboard);
+    assert(!firstDown.isRepeat);
+    assert(!secondDown.isRepeat);
+
+    const auto firstRepeat = decodeOne('A', 0x1E, 0, firstKeyboard);
+    const auto secondRepeat = decodeOne('A', 0x1E, 0, secondKeyboard);
+    assert(firstRepeat.isRepeat);
+    assert(secondRepeat.isRepeat);
+
+    decodeOne('A', 0x1E, RI_KEY_BREAK, firstKeyboard);
+    const auto firstFreshDown = decodeOne('A', 0x1E, 0, firstKeyboard);
+    assert(!firstFreshDown.isRepeat);
+    assert(secondRepeat.isRepeat);
+
+    decodeOne('A', 0x1E, RI_KEY_BREAK, firstKeyboard);
+    decodeOne('A', 0x1E, RI_KEY_BREAK, secondKeyboard);
+    InputCore::resetKeyboardState();
 }
 
 
@@ -162,6 +192,7 @@ int main() {
     releasingOneSideKeepsTheOtherModifierPressed();
     resettingKeyboardStateClearsStaleModifiers();
     stoppingCaptureClearsTrackedModifiers();
+    repeatedKeysAreTrackedIndependentlyPerKeyboard();
     removingOneKeyboardPreservesOtherDeviceModifiers();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     return 0;
