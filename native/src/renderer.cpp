@@ -80,7 +80,7 @@ void Renderer::resize(UINT width, UINT height) noexcept {
         std::max<UINT>(1, width), std::max<UINT>(1, height)));
 }
 
-void Renderer::render(const std::deque<InputEvent>& history) noexcept {
+void Renderer::render(const std::deque<InputEvent>& history, DWORD fadeDurationMs) noexcept {
     if (!factory_ || !createDeviceResources()) return;
 
     target_->BeginDraw();
@@ -98,7 +98,7 @@ void Renderer::render(const std::deque<InputEvent>& history) noexcept {
     float opacity = 1.0f;
     if (!history.empty()) {
         const DWORD age = now - history.front().timestamp;
-        constexpr DWORD fadeDuration = 1100;
+        const DWORD fadeDuration = std::max<DWORD>(1, fadeDurationMs);
         opacity = age < fadeDuration
             ? std::clamp(1.0f - static_cast<float>(age) /
                 static_cast<float>(fadeDuration), 0.0f, 1.0f)
