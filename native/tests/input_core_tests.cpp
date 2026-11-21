@@ -120,25 +120,24 @@ void removingOneKeyboardPreservesOtherDeviceModifiers() {
 
     decodeOne(VK_CONTROL, 0x1D, 0, firstKeyboard);
     decodeOne(VK_SHIFT, 0x2A, 0, secondKeyboard);
-    InputCore::handleDeviceChange(GIDC_REMOVAL, firstKeyboard);
 
+    // An unrelated removal must not clear either tracked keyboard.
     InputCore::handleDeviceChange(GIDC_REMOVAL,
         reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(3)));
-    const auto key = decodeOne('F', 0x21, 0, secondKeyboard);
-    assert(key.chordLabel.find(L"Shift + ") == 0);
-    assert(key.chordLabel.find(L"Ctrl + ") != 0);
+    const auto bothModifiers = decodeOne('F', 0x21, 0, secondKeyboard);
+    assert(bothModifiers.chordLabel.find(L"Ctrl + Shift + ") == 0);
+    decodeOne('F', 0x21, RI_KEY_BREAK, secondKeyboard);
 
+    // Removing the first keyboard clears only its modifier.
     InputCore::handleDeviceChange(GIDC_REMOVAL, firstKeyboard);
-    const auto secondKey = decodeOne('G', 0x22, 0, secondKeyboard);
-    assert(secondKey.chordLabel.find(L"Shift + ") == 0);
-    assert(secondKey.chordLabel.find(L"Ctrl + ") != 0);
+    const auto remainingModifier = decodeOne('G', 0x22, 0, secondKeyboard);
+    assert(remainingModifier.chordLabel.find(L"Shift + ") == 0);
+    assert(remainingModifier.chordLabel.find(L"Ctrl + ") != 0);
 
     decodeOne('G', 0x22, RI_KEY_BREAK, secondKeyboard);
-    decodeOne('F', 0x21, RI_KEY_BREAK, secondKeyboard);
     decodeOne(VK_SHIFT, 0x2A, RI_KEY_BREAK, secondKeyboard);
     InputCore::resetKeyboardState();
 }
-
 void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     const wchar_t ordinary[] = L"e";
     assert(keyviz::translatedKeyLabel(1, ordinary, 1, L"Key E") == L"e");
