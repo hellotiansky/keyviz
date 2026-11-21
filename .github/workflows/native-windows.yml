@@ -30,6 +30,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate branded application icon
+        shell: pwsh
+        run: ./native/resources/generate-icon.ps1
+
       - name: Configure x64
         run: cmake -S native -B build/native -A x64
 
