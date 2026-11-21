@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <commdlg.h>
 #include "keyviz/input_core.h"
 #include "keyviz/input_event.h"
 #include "keyviz/event_engine.h"
@@ -13,6 +14,7 @@
 #include <utility>
 #include <vector>
 #include <cwctype>
+#include <fstream>
 
 namespace keyviz {
 constexpr wchar_t kAppName[] = L"Keyviz Native";
@@ -185,15 +187,7 @@ public:
         const DWORD now = GetTickCount();
         for (const auto& event : events) {
             ++totalCount;
-            const wchar_t* type = L"KEY";
-            switch (event.type) {
-            case InputEvent::Type::KeyDown: type = L"KEY DOWN"; break;
-            case InputEvent::Type::KeyUp: type = L"KEY UP"; break;
-            case InputEvent::Type::MouseDown: type = L"MOUSE DOWN"; break;
-            case InputEvent::Type::MouseUp: type = L"MOUSE UP"; break;
-            case InputEvent::Type::Wheel: type = L"WHEEL"; break;
-            case InputEvent::Type::MouseMove: type = L"MOUSE MOVE"; break;
-            }
+            const wchar_t* type = eventTypeLabel(event.type);
             std::wstring searchable = event.label + L" " + event.chordLabel;
             if (!matchesType(event, selectedType) || !containsInsensitive(searchable, query))
                 continue;
@@ -226,6 +220,88 @@ private:
     static constexpr int kTypeFilterId = 302;
     static constexpr int kListId = 303;
     static constexpr int kStatusId = 304;
+    static constexpr int kExportId = 305;
+
+    static const wchar_t* eventTypeLabel(InputEvent::Type type) {
+        switch (type) {
+        case InputEvent::Type::KeyDown: return L"KEY DOWN";
+        case InputEvent::Type::KeyUp: return L"KEY UP";
+        case InputEvent::Type::MouseDown: return L"MOUSE DOWN";
+        case InputEvent::Type::MouseUp: return L"MOUSE UP";
+        case InputEvent::Type::Wheel: return L"WHEEL";
+        case InputEvent::Type::MouseMove: return L"MOUSE MOVE";
+        }
+        return L"UNKNOWN";
+    }
+
+    static std::string toUtf8(const std::wstring& value) {
+        if (value.empty()) return {};
+        const int size = WideCharToMultiByte(CP_UTF8, 0, value.data(),
+            static_cast<int>(value.size()), nullptr, 0, nullptr, nullptr);
+        if (size <= 0) return {};
+        std::string result(static_cast<size_t>(size), '\\0');
+        WideCharToMultiByte(CP_UTF8, 0, value.data(),
+            static_cast<int>(value.size()), result.data(), size, nullptr, nullptr);
+        return result;
+    }
+
+    static std::wstring csvEscape(const std::wstring& value) {
+        std::wstring escaped = L"\\"";
+        for (wchar_t ch : value) {
+            if (ch == L'"') escaped += L'"';
+            escaped += ch;
+        }
+        escaped += L'"';
+        return escaped;
+    }
+
+    void exportCsv() const {
+        if (!getEvents_ || !hwnd_) return;
+        wchar_t path[MAX_PATH] = L"keyviz-history.csv";
+        OPENFILENAMEW dialog{};
+        dialog.lStructSize = sizeof(dialog);
+        dialog.hwndOwner = hwnd_;
+        dialog.lpstrFilter = L"CSV files (*.csv)\\0*.csv\\0All files (*.*)\\0*.*\\0";
+        dialog.lpstrFile = path;
+        dialog.nMaxFile = MAX_PATH;
+        dialog.lpstrDefExt = L"csv";
+        dialog.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
+        if (!GetSaveFileNameW(&dialog)) return;
+
+        HWND search = GetDlgItem(hwnd_, kSearchId);
+        HWND typeFilter = GetDlgItem(hwnd_, kTypeFilterId);
+        if (!search || !typeFilter) return;
+        wchar_t searchBuffer[256]{};
+        GetWindowTextW(search, searchBuffer, static_cast<int>(std::size(searchBuffer)));
+        const std::wstring query(searchBuffer);
+        const int selectedType = static_cast<int>(SendMessageW(typeFilter, CB_GETCURSEL, 0, 0));
+        const auto& events = getEvents_();
+        const DWORD now = GetTickCount();
+
+        std::ofstream output(path, std::ios::binary);
+        if (!output) {
+            MessageBoxW(hwnd_, L"Could not create the CSV file.", kAppName,
+                MB_ICONERROR | MB_OK);
+            return;
+        }
+        output.write("\\xEF\\xBB\\xBF", 3);
+        output << "age_ms,event_type,label,chord,repeat_count\\r\\n";
+        for (const auto& event : events) {
+            const std::wstring searchable = event.label + L" " + event.chordLabel;
+            if (!matchesType(event, selectedType) || !containsInsensitive(searchable, query))
+                continue;
+            const std::wstring row = std::to_wstring(now - event.timestamp) + L"," +
+                csvEscape(eventTypeLabel(event.type)) + L"," + csvEscape(event.label) + L"," +
+                csvEscape(event.chordLabel) + L"," + std::to_wstring(event.repeatCount) + L"\\r\\n";
+            output << toUtf8(row);
+        }
+        if (!output) {
+            MessageBoxW(hwnd_, L"An error occurred while writing the CSV file.", kAppName,
+                MB_ICONERROR | MB_OK);
+            return;
+        }
+        MessageBoxW(hwnd_, L"History exported successfully.", kAppName, MB_ICONINFORMATION | MB_OK);
+    }
 
     static bool containsInsensitive(const std::wstring& value, const std::wstring& query) {
         if (query.empty()) return true;
@@ -277,6 +353,9 @@ private:
             for (const auto* option : options)
                 SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(option));
             SendMessageW(combo, CB_SETCURSEL, 0, 0);
+            CreateWindowExW(0, L"BUTTON", L"Export CSV", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                520, 8, 80, 26, hwnd,
+                reinterpret_cast<HMENU>(static_cast<INT_PTR>(kExportId)), instance, nullptr);
             CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", nullptr,
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL |
                     LBS_NOINTEGRALHEIGHT | LBS_HASSTRINGS,
@@ -290,6 +369,10 @@ private:
             return 0;
         }
         case WM_COMMAND:
+            if (LOWORD(wParam) == kExportId && HIWORD(wParam) == BN_CLICKED) {
+                self->exportCsv();
+                return 0;
+            }
             if ((LOWORD(wParam) == kSearchId && HIWORD(wParam) == EN_CHANGE) ||
                 (LOWORD(wParam) == kTypeFilterId && HIWORD(wParam) == CBN_SELCHANGE)) {
                 self->refresh();
@@ -301,9 +384,11 @@ private:
             const int clientHeight = static_cast<int>(HIWORD(lParam));
             const int height = std::max(0, clientHeight - 90);
             if (HWND search = GetDlgItem(hwnd, kSearchId))
-                MoveWindow(search, 68, 8, std::max(120, width - 330), 26, TRUE);
+                MoveWindow(search, 68, 8, std::max(120, width - 410), 26, TRUE);
             if (HWND filter = GetDlgItem(hwnd, kTypeFilterId))
-                MoveWindow(filter, std::max(330, width - 180), 8, 180, 200, TRUE);
+                MoveWindow(filter, std::max(300, width - 280), 8, 150, 200, TRUE);
+            if (HWND exportButton = GetDlgItem(hwnd, kExportId))
+                MoveWindow(exportButton, std::max(460, width - 120), 8, 120, 26, TRUE);
             if (HWND list = GetDlgItem(hwnd, kListId))
                 MoveWindow(list, 10, 42, width, height, TRUE);
             if (HWND status = GetDlgItem(hwnd, kStatusId))
