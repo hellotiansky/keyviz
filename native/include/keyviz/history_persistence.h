@@ -73,7 +73,7 @@ public:
         std::uint32_t count = 0;
         if (!readValue(input, count) || count > 320) return false;
 
-        std::vector<InputEvent> loaded;
+        std::deque<InputEvent> loaded;
         loaded.reserve(count);
         for (std::uint32_t i = 0; i < count; ++i) {
             InputEvent event;
@@ -98,9 +98,7 @@ public:
             loaded.push_back(std::move(event));
         }
         if (input.peek() != std::char_traits<char>::eof()) return false;
-        history.clear();
-        for (auto it = loaded.rbegin(); it != loaded.rend(); ++it)
-            history.append(std::move(*it));
+        history.replaceEvents(std::move(loaded));
         return true;
     }
 
