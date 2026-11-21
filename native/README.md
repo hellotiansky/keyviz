@@ -22,7 +22,7 @@ Output: `build/native/Release/KeyvizNative.exe`.
 
 ## Windows installer
 
-The repository includes an Inno Setup definition at `installer/keyviz-native.iss`. On a Windows x64 build machine with Inno Setup 6 installed, build the native executable first, then run:
+The repository includes an Inno Setup definition at `installer/keyviz-native.iss`. On a Windows x64 build machine with Inno Setup 6 installed, generate the branded multi-size application icon, build the native executable, then run:
 
 ```powershell
 & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer/keyviz-native.iss
@@ -32,7 +32,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 
 
 ## Current implementation
-- C++20 Win32 GUI application with embedded Windows product/file version metadata (0.2.0) and per-monitor DPI awareness V2 request
+- C++20 Win32 GUI application with a branded multi-size executable/tray icon, embedded Windows product/file version metadata (0.2.0) and per-monitor DPI awareness V2 request
 - One click-through, topmost overlay window per enumerated display
 - Monitor-aware placement inside each display's work area
 - A single hidden top-level input window owns keyboard and mouse Raw Input registration
@@ -67,6 +67,6 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 ## Next milestones
 1. Validate dead-key and keyboard-layout behavior on physical Windows systems; expand animation styles.
 2. Investigate a separate, opt-in text-input integration for IME-committed text and richer history navigation.
-3. Add a branded application icon and complete physical-device validation.
+3. Complete physical-device validation.
 
 This is an incremental development build, not yet a complete Keyviz replacement.
