@@ -17,6 +17,7 @@
 - In progress: robust keyboard layout/modifier handling and configurable animation
 - Persistence limitation: forced termination can lose events since the last 30-second checkpoint
 - Completed: Inno Setup per-user x64 installer, Start Menu shortcut, optional desktop shortcut and registered uninstaller
+- Completed: embedded Windows file/product version metadata for the native executable
 - Next: application icon/version resources and physical-device validation
 - Runtime validation still needed on physical multi-monitor Windows systems, including mixed-DPI and hot-plug configurations
 
