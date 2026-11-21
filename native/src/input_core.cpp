@@ -1,5 +1,6 @@
 #include "keyviz/input_core.h"
 #include "keyviz/mouse_sampling.h"
+#include "keyviz/keyboard_translation.h"
 #include <hidusage.h>
 #include <cwctype>
 #include <iterator>
@@ -94,25 +95,9 @@ std::wstring InputCore::localizedKeyName(const RAWKEYBOARD& key) {
     // Flag 0x4 asks Windows not to mutate the keyboard buffer's dead-key state.
     const int length = ToUnicodeEx(vk, scanCode, state, translated,
         static_cast<int>(std::size(translated)), 0x4, layout);
-    if (length > 0) {
-        for (int i = 0; i < length; ++i) {
-            if (!iswprint(translated[i])) return keyName(key);
-        }
-        return std::wstring(translated, translated + length);
-    }
-    if (length < 0) {
-        // ToUnicodeEx returns a negative count for a dead key. With
-        // TU_NO_STATE_CHANGE set, this reports the accent without consuming
-        // or altering the keyboard layout's pending composition state.
-        const int deadLength = -length;
-        bool printable = deadLength > 0;
-        for (int i = 0; i < deadLength; ++i)
-            printable = printable && iswprint(translated[i]);
-        if (printable)
-            return std::wstring(translated, translated + deadLength) + L" (dead)";
-    }
-    // Non-printable keys retain their descriptive virtual-key name.
-    return keyName(key);
+    // Keep normal text, dead-key accents and non-printable fallbacks in a
+    // small pure helper so their formatting can be covered by CTest.
+    return translatedKeyLabel(length, translated, std::size(translated), keyName(key));
 }
 std::wstring InputCore::keyName(const RAWKEYBOARD& key) {
     const USHORT vk = normalizedVirtualKey(key);
