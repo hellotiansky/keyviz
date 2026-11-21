@@ -102,6 +102,8 @@ void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     assert(keyviz::translatedKeyLabel(1, nonPrintable, 1, L"Enter") == L"Enter");
     assert(keyviz::translatedKeyLabel(0, ordinary, 1, L"Key E") == L"Key E");
     assert(keyviz::translatedKeyLabel(-2, accent, 1, L"Dead key") == L"Dead key");
+    assert(keyviz::translatedKeyLabel(1, nullptr, 1, L"Missing") == L"Missing");
+    assert(keyviz::translatedKeyLabel(2, ordinary, 1, L"Too long") == L"Too long");
 }
 } // namespace
 
