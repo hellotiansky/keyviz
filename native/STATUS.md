@@ -20,6 +20,7 @@
 - Completed: CTest coverage for history capacity, resizing, clearing, movement coalescing across action boundaries (including refreshed monotonic and wall-clock timestamps), persistence round-trips, mixed-DPI layout, signed multi-monitor pointer coordinates and mouse sampling cadence/tick-wraparound
 - Completed: Raw Input core tests for left/right Ctrl normalization, right Shift/right Alt chord tracking, modifier chord state and AltGr combinations
 - Completed: InputCore test verifies modifier reset clears stale chord state after keyboard removal
+- Completed: capture start/stop resets tracked keyboard modifiers and mouse sampling baselines; CTest covers stop-time modifier reset
 - Completed: versioned, bounded event-history persistence with atomic file replacement, 30-second checkpoints and shutdown save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
