@@ -4,11 +4,14 @@
 
 #include <windows.h>
 #include <algorithm>
+#include <chrono>
+#include <cstdlib>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
+#include <utility>
 
 namespace keyviz {
 
