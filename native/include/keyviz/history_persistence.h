@@ -25,7 +25,7 @@ public:
             std::free(value);
             return {};
         }
-        if (value[0] == L'\\0') {
+        if (value[0] == L'\0') {
             std::free(value);
             return {};
         }
