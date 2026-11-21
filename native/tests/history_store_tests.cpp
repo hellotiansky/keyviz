@@ -328,6 +328,7 @@ void clearRemovesAllEvents() {
 } // namespace
 
 int main() {
+    missingLocalAppDataDisablesPersistenceInsteadOfUsingRelativePaths();
     capacityIsBoundedAndCanBeChanged();
     mouseMovementSamplesAreCoalesced();
     movementCoalescingPreservesInterveningActions();
