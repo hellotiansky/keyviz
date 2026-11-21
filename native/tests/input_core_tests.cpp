@@ -235,6 +235,24 @@ void invalidVirtualKeysAreIgnoredWithoutLosingHeldModifiers() {
     InputCore::resetKeyboardState();
 }
 
+void keyboardOverrunClearsUnreliableDeviceState() {
+    const HANDLE keyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(51));
+    InputCore::resetKeyboardState();
+    decodeOne(VK_CONTROL, 0x1D, 0, keyboard);
+    decodeOne('A', 0x1E, 0, keyboard);
+
+    const auto overrun = InputCore::decode(
+        keyboardInput(0, KEYBOARD_OVERRUN_MAKE_CODE, 0, keyboard));
+    assert(overrun.empty());
+
+    const auto freshKey = decodeOne('B', 0x30, 0, keyboard);
+    assert(!freshKey.isRepeat);
+    assert(freshKey.chordLabel.find(L"Ctrl + ") != 0);
+
+    decodeOne('B', 0x30, RI_KEY_BREAK, keyboard);
+    InputCore::resetKeyboardState();
+}
+
 void pauseAndPrintScreenUseStablePhysicalLabels() {
     const auto pause = decodeOne(VK_PAUSE, 0x45, RI_KEY_E1);
     assert(pause.label == L"Pause");
@@ -285,6 +303,7 @@ int main() {
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     keyboardTranslationPreservesExtendedScanCodePrefixes();
     invalidVirtualKeysAreIgnoredWithoutLosingHeldModifiers();
+    keyboardOverrunClearsUnreliableDeviceState();
     pauseAndPrintScreenUseStablePhysicalLabels();
     return 0;
 }
