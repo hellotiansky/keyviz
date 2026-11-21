@@ -27,7 +27,8 @@ Keyboard-layout translation uses `ToUnicodeEx` with `TU_NO_STATE_CHANGE` (`0x4`)
 
 ## Follow-up validation
 
-1. Test dead-key sequences (for example, accent then vowel) with several installed layouts and confirm that label lookup does not consume the composition state.
-2. Switch the foreground application's input language while capture remains active and confirm the next key label uses the newly active layout.
-3. Test AltGr, E0/E1 extended keys (including Pause/Break behavior) on physical keyboards.
-4. If a future opt-in text feature is proposed, define its exact scope and retention behavior before implementing any cross-process integration.
+1. Open two ordinary foreground applications with different input languages installed. Keep capture running, switch the active language in the first application, type a printable key, then switch to the second application and repeat. The next key label should follow the active foreground thread's layout rather than a layout cached when capture started.
+2. With a layout that has a dead key, press the accent key and then its base letter. Confirm Keyviz can label the accent as `(dead)` while the target application still receives the expected composed character; repeat with capture stopped as a control.
+3. Test AltGr, E0/E1 extended keys (including Pause/Break behavior) on physical keyboards and record keyboard model, Windows version and active layout for any discrepancy.
+4. If there is no foreground application (for example, immediately after closing the active window), check that translation falls back to the capture thread's layout and does not crash.
+5. If a future opt-in text feature is proposed, define its exact scope and retention behavior before implementing any cross-process integration.
