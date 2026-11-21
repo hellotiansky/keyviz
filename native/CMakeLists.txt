@@ -55,4 +55,22 @@ if(BUILD_TESTING)
         target_compile_options(HistoryStoreTests PRIVATE /W4 /permissive- /EHsc /utf-8)
     endif()
     add_test(NAME HistoryStoreTests COMMAND HistoryStoreTests)
+
+    add_executable(InputCoreTests
+        tests/input_core_tests.cpp
+        src/input_core.cpp
+    )
+    target_include_directories(InputCoreTests PRIVATE include)
+    target_compile_features(InputCoreTests PRIVATE cxx_std_20)
+    target_compile_definitions(InputCoreTests PRIVATE
+        UNICODE
+        _UNICODE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+    )
+    target_link_libraries(InputCoreTests PRIVATE user32)
+    if(MSVC)
+        target_compile_options(InputCoreTests PRIVATE /W4 /permissive- /EHsc /utf-8)
+    endif()
+    add_test(NAME InputCoreTests COMMAND InputCoreTests)
 endif()
