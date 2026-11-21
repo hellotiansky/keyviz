@@ -67,6 +67,10 @@ public:
         ShowWindow(hwnd_, SW_SHOW);
         SetForegroundWindow(hwnd_);
     }
+    void destroy() noexcept {
+        if (hwnd_ && IsWindow(hwnd_)) DestroyWindow(hwnd_);
+        hwnd_ = nullptr;
+    }
 private:
     enum : int {
         kKeyboardFilterId = 201, kMouseButtonsFilterId = 202,
@@ -222,6 +226,11 @@ public:
         refresh();
         ShowWindow(hwnd_, SW_SHOW);
         SetForegroundWindow(hwnd_);
+    }
+
+    void destroy() noexcept {
+        if (hwnd_ && IsWindow(hwnd_)) DestroyWindow(hwnd_);
+        hwnd_ = nullptr;
     }
 
     void refresh() const {
@@ -468,6 +477,7 @@ struct OverlayWindow {
 class App {
 public:
     explicit App(HINSTANCE instance) : instance_(instance) {}
+    ~App() { shutdown(); }
 
     bool initialize() {
         if (!registerWindowClasses()) return false;
@@ -687,6 +697,8 @@ private:
     }
 
     void shutdown() noexcept {
+        if (shutdown_) return;
+        shutdown_ = true;
         if (!historyPath_.empty()) HistoryPersistence::save(historyPath_, engine_.history());
         if (inputWindow_) {
             removeTrayIcon();
@@ -697,6 +709,8 @@ private:
             UnregisterHotKey(inputWindow_, kHistoryHotkeyId);
         }
         input_.stop();
+        settings_.destroy();
+        historyWindow_.destroy();
         for (auto& overlay : overlays_) {
             overlay->renderer.shutdown();
             if (IsWindow(overlay->hwnd)) DestroyWindow(overlay->hwnd);
@@ -809,6 +823,7 @@ private:
     SettingsStore settingsStore_;
     std::wstring historyPath_;
     bool trayIconAdded_{};
+    bool shutdown_{};
     SettingsWindow settings_;
     HistoryWindow historyWindow_;
     std::vector<std::unique_ptr<OverlayWindow>> overlays_;
