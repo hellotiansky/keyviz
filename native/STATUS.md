@@ -9,7 +9,7 @@
 - Completed: CTest geometry regression coverage at 100%, 150% and 200% DPI scaling
 - Completed: display resolution and device-tree changes trigger a debounced 300 ms overlay rebuild for monitor hot-plug
 - Completed: single hidden Raw Input owner window; shared event history is rendered by all overlays
-- Completed: Raw Input device-change notifications reset tracked modifier state when a keyboard is removed, preventing stale chords after unplug
+- Completed: Raw Input keyboard removal erases only the matching per-device state entry; no metadata query is needed after Windows invalidates a removed device handle
 - Completed: Raw Input packet reads validate copied byte counts and keyboard/mouse payload sizes before decoding
 - Completed: display topology change rebuilds the overlay set
 - Completed: normalized keyboard, mouse button and wheel capture; pointer movement samples are capped at 20 Hz and consecutive movement samples coalesce only within uninterrupted movement runs, preserving intervening button/wheel events and their ordering
@@ -41,4 +41,4 @@
 The original Tauri application remains intact on the base branch.
 
 
-- Keyboard modifier state is tracked per Raw Input device; removing one keyboard clears only that device's keys, preserving modifiers still held on other keyboards. If Windows cannot identify a removed device, state is reset conservatively.
+- Keyboard modifier state is tracked per Raw Input device; only keyboard packets create entries, so device removal directly erases the matching handle without querying potentially invalid device metadata. Unknown removals leave other keyboards untouched.
