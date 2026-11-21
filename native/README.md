@@ -32,7 +32,7 @@ The per-user installer is written to `build/installer/KeyvizNative-Setup-x64.exe
 
 
 ## Current implementation
-- C++20 Win32 GUI application and per-monitor DPI awareness V2 request
+- C++20 Win32 GUI application with embedded Windows product/file version metadata (0.2.0) and per-monitor DPI awareness V2 request
 - One click-through, topmost overlay window per enumerated display
 - Monitor-aware placement inside each display's work area
 - A single hidden top-level input window owns keyboard and mouse Raw Input registration
