@@ -31,3 +31,22 @@ target_link_libraries(KeyvizNative PRIVATE
 if(MSVC)
     target_compile_options(KeyvizNative PRIVATE /W4 /permissive- /EHsc /utf-8)
 endif()
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(HistoryStoreTests
+        tests/history_store_tests.cpp
+    )
+    target_include_directories(HistoryStoreTests PRIVATE include)
+    target_compile_features(HistoryStoreTests PRIVATE cxx_std_20)
+    target_compile_definitions(HistoryStoreTests PRIVATE
+        UNICODE
+        _UNICODE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+    )
+    if(MSVC)
+        target_compile_options(HistoryStoreTests PRIVATE /W4 /permissive- /EHsc /utf-8)
+    endif()
+    add_test(NAME HistoryStoreTests COMMAND HistoryStoreTests)
+endif()
