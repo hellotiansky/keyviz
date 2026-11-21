@@ -14,6 +14,7 @@ struct FilterSettings {
     bool mouseWheel{true};
     bool mouseMove{true};
     std::size_t historyCapacity{80};
+    DWORD animationDurationMs{1100};
 };
 
 class SettingsStore {
@@ -29,6 +30,10 @@ public:
             GetPrivateProfileIntW(L"History", L"Capacity", 80, path.c_str());
         settings.historyCapacity = capacity == 40 || capacity == 80 ||
             capacity == 160 || capacity == 320 ? capacity : 80;
+        const UINT fadeDuration = path.empty() ? 1100 :
+            GetPrivateProfileIntW(L"Animation", L"FadeDurationMs", 1100, path.c_str());
+        settings.animationDurationMs = fadeDuration == 400 || fadeDuration == 800 ||
+            fadeDuration == 1100 || fadeDuration == 1600 ? fadeDuration : 1100;
         return settings;
     }
 
@@ -44,7 +49,8 @@ public:
             write(L"Filters", L"MouseButtons", settings.mouseButtons ? L"1" : L"0") &&
             write(L"Filters", L"MouseWheel", settings.mouseWheel ? L"1" : L"0") &&
             write(L"Filters", L"MouseMove", settings.mouseMove ? L"1" : L"0") &&
-            write(L"History", L"Capacity", std::to_wstring(settings.historyCapacity));
+            write(L"History", L"Capacity", std::to_wstring(settings.historyCapacity)) &&
+            write(L"Animation", L"FadeDurationMs", std::to_wstring(settings.animationDurationMs));
     }
 
 private:
