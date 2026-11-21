@@ -1,5 +1,8 @@
 #include "keyviz/history_store.h"
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <cassert>
 #include <cstddef>
 #include <utility>
