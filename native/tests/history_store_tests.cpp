@@ -1,5 +1,6 @@
 #include "keyviz/history_store.h"
 #include "keyviz/history_persistence.h"
+#include "keyviz/settings_store.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -25,6 +26,24 @@ InputEvent keyEvent(USHORT virtualKey, DWORD timestamp, bool repeat = false) {
     event.timestamp = timestamp;
     event.isRepeat = repeat;
     return event;
+}
+
+void missingLocalAppDataDisablesPersistenceInsteadOfUsingRelativePaths() {
+    wchar_t* previous = nullptr;
+    size_t previousLength = 0;
+    assert(_wdupenv_s(&previous, &previousLength, L"LOCALAPPDATA") == 0);
+
+    assert(_wputenv_s(L"LOCALAPPDATA", L"") == 0);
+    assert(keyviz::HistoryPersistence::defaultPath().empty());
+    keyviz::SettingsStore settings;
+    assert(!settings.save(keyviz::FilterSettings{}));
+
+    if (previous) {
+        assert(_wputenv_s(L"LOCALAPPDATA", previous) == 0);
+        std::free(previous);
+    } else {
+        assert(_wputenv_s(L"LOCALAPPDATA", L"") == 0);
+    }
 }
 
 void capacityIsBoundedAndCanBeChanged() {
