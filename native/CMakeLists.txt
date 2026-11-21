@@ -73,4 +73,20 @@ if(BUILD_TESTING)
         target_compile_options(InputCoreTests PRIVATE /W4 /permissive- /EHsc /utf-8)
     endif()
     add_test(NAME InputCoreTests COMMAND InputCoreTests)
+
+    add_executable(DisplayLayoutTests
+        tests/display_layout_tests.cpp
+    )
+    target_include_directories(DisplayLayoutTests PRIVATE include)
+    target_compile_features(DisplayLayoutTests PRIVATE cxx_std_20)
+    target_compile_definitions(DisplayLayoutTests PRIVATE
+        UNICODE
+        _UNICODE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+    )
+    if(MSVC)
+        target_compile_options(DisplayLayoutTests PRIVATE /W4 /permissive- /EHsc /utf-8)
+    endif()
+    add_test(NAME DisplayLayoutTests COMMAND DisplayLayoutTests)
 endif()
