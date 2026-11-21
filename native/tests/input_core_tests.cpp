@@ -216,6 +216,25 @@ void keyboardTranslationPreservesExtendedScanCodePrefixes() {
     assert(keyviz::keyboardTranslationScanCode(0x45, false, true) == 0xE145);
 }
 
+void invalidVirtualKeysAreIgnoredWithoutLosingHeldModifiers() {
+    InputCore::resetKeyboardState();
+    decodeOne(VK_CONTROL, 0x1D);
+
+    const auto decodeInvalid = [](USHORT virtualKey) {
+        const auto events = InputCore::decode(keyboardInput(virtualKey, 0x1D));
+        assert(events.empty());
+    };
+    decodeInvalid(0x0100); // Outside the 256-entry virtual-key state table.
+    decodeInvalid(0x00FF); // Raw Input's reserved/invalid VKey sentinel.
+
+    const auto key = decodeOne('K', 0x25);
+    assert(key.chordLabel.find(L"Ctrl + ") == 0);
+
+    decodeOne('K', 0x25, RI_KEY_BREAK);
+    decodeOne(VK_CONTROL, 0x1D, RI_KEY_BREAK);
+    InputCore::resetKeyboardState();
+}
+
 void pauseAndPrintScreenUseStablePhysicalLabels() {
     const auto pause = decodeOne(VK_PAUSE, 0x45, RI_KEY_E1);
     assert(pause.label == L"Pause");
@@ -265,6 +284,7 @@ int main() {
     removingAndReconnectingKeyboardResetsRepeatState();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     keyboardTranslationPreservesExtendedScanCodePrefixes();
+    invalidVirtualKeysAreIgnoredWithoutLosingHeldModifiers();
     pauseAndPrintScreenUseStablePhysicalLabels();
     return 0;
 }
