@@ -33,8 +33,8 @@ bool InputCore::start(HWND target) noexcept {
 void InputCore::stop() noexcept {
     if (registered_) {
         RAWINPUTDEVICE devices[2]{};
-        devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC_KEYBOARD; devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD; devices[0].dwFlags = RIDEV_REMOVE;
-        devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC_MOUSE; devices[1].usUsage = HID_USAGE_GENERIC_MOUSE; devices[1].dwFlags = RIDEV_REMOVE;
+        devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC; devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD; devices[0].dwFlags = RIDEV_REMOVE;
+        devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC; devices[1].usUsage = HID_USAGE_GENERIC_MOUSE; devices[1].dwFlags = RIDEV_REMOVE;
         RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE));
     }
     registered_ = false;
