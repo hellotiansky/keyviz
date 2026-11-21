@@ -5,23 +5,25 @@
 #undef NDEBUG
 #endif
 #include <cassert>
+#include <cstdint>
 #include <string>
 
 using keyviz::InputCore;
 using keyviz::InputEvent;
 
 namespace {
-RAWINPUT keyboardInput(USHORT virtualKey, USHORT makeCode, USHORT flags = 0) {
+RAWINPUT keyboardInput(USHORT virtualKey, USHORT makeCode, USHORT flags = 0, HANDLE device = nullptr) {
     RAWINPUT raw{};
     raw.header.dwType = RIM_TYPEKEYBOARD;
+    raw.header.hDevice = device;
     raw.data.keyboard.MakeCode = makeCode;
     raw.data.keyboard.Flags = flags;
     raw.data.keyboard.VKey = virtualKey;
     return raw;
 }
 
-InputEvent decodeOne(USHORT virtualKey, USHORT makeCode, USHORT flags = 0) {
-    const auto events = InputCore::decode(keyboardInput(virtualKey, makeCode, flags));
+InputEvent decodeOne(USHORT virtualKey, USHORT makeCode, USHORT flags = 0, HANDLE device = nullptr) {
+    const auto events = InputCore::decode(keyboardInput(virtualKey, makeCode, flags, device));
     assert(events.size() == 1);
     return events.front();
 }
@@ -110,6 +112,25 @@ void stoppingCaptureClearsTrackedModifiers() {
     decodeOne('E', 0x12, RI_KEY_BREAK);
 }
 
+
+void removingOneKeyboardPreservesOtherDeviceModifiers() {
+    const HANDLE firstKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(1));
+    const HANDLE secondKeyboard = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(2));
+    InputCore::resetKeyboardState();
+
+    decodeOne(VK_CONTROL, 0x1D, 0, firstKeyboard);
+    decodeOne(VK_SHIFT, 0x2A, 0, secondKeyboard);
+    InputCore::resetKeyboardState(firstKeyboard);
+
+    const auto key = decodeOne('F', 0x21, 0, secondKeyboard);
+    assert(key.chordLabel.find(L"Shift + ") == 0);
+    assert(key.chordLabel.find(L"Ctrl + ") != 0);
+
+    decodeOne('F', 0x21, RI_KEY_BREAK, secondKeyboard);
+    decodeOne(VK_SHIFT, 0x2A, RI_KEY_BREAK, secondKeyboard);
+    InputCore::resetKeyboardState();
+}
+
 void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     const wchar_t ordinary[] = L"e";
     assert(keyviz::translatedKeyLabel(1, ordinary, 1, L"Key E") == L"e");
@@ -134,6 +155,7 @@ int main() {
     releasingOneSideKeepsTheOtherModifierPressed();
     resettingKeyboardStateClearsStaleModifiers();
     stoppingCaptureClearsTrackedModifiers();
+    removingOneKeyboardPreservesOtherDeviceModifiers();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     return 0;
 }
