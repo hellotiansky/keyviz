@@ -6,6 +6,7 @@ on:
       - "rewrite/native-windows-cpp"
     paths:
       - "native/**"
+      - "installer/**"
       - ".github/workflows/native-windows.yml"
   pull_request:
     paths:
@@ -37,10 +38,25 @@ jobs:
       - name: Run native unit tests
         run: ctest --test-dir build/native -C Release --output-on-failure
 
-      - name: Upload executable
+      - name: Upload portable executable
         uses: actions/upload-artifact@v4
         with:
           name: keyviz-native-windows-x64
           path: build/native/Release/KeyvizNative.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build per-user installer
+        shell: pwsh
+        run: '& "$env:ProgramFiles(x86)\\Inno Setup 6\\ISCC.exe" installer/keyviz-native.iss'
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyviz-native-windows-installer-x64
+          path: build/installer/KeyvizNative-Setup-x64.exe
           if-no-files-found: error
           retention-days: 14
