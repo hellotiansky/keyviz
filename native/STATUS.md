@@ -25,7 +25,7 @@
 - Completed: capture start/stop resets tracked keyboard modifiers and mouse sampling baselines; CTest covers stop-time reset across multiple keyboard devices
 - Completed: keyboard repeat detection is isolated per Raw Input device; CTest covers independent initial presses, repeats and release/re-press sequences
 - Completed: decoded keyboard events retain their runtime Raw Input device identity so history repeat coalescing cannot attribute one keyboard's repeats to another keyboard; CTest covers interleaved same-key presses across devices
-- Completed: versioned, bounded event-history persistence with atomic file replacement, failed-save temporary-file cleanup, 30-second checkpoints and shutdown save
+- Completed: versioned, bounded event-history persistence with atomic file replacement, failed-save temporary-file cleanup, process-scoped temporary names and checked stream close, 30-second checkpoints and shutdown save
 - Completed: notification-area tray icon with settings/history shortcuts and clean exit
 - Completed: configurable overlay fade duration (0.4/0.8/1.1/1.6 seconds), persisted in settings
 - Completed: key translation now uses the app's tracked Raw Input modifier state (including left/right modifiers and AltGr state)
