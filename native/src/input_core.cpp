@@ -13,6 +13,17 @@ bool InputCore::haveMousePoint_ = false;
 DWORD InputCore::lastMouseMoveTick_ = 0;
 std::unordered_map<HANDLE, std::array<bool, 256>> InputCore::pressedKeysByDevice_{};
 bool InputCore::start(HWND target) noexcept {
+    // Restarting capture must first release any registration owned by the
+    // previous session, and an invalid target must never become a sink.
+    if (registered_) stop();
+    if (!target || !IsWindow(target)) {
+        resetKeyboardState();
+        haveMousePoint_ = false;
+        lastMousePoint_ = {};
+        lastMouseMoveTick_ = 0;
+        return false;
+    }
+
     // A new capture session must never inherit key or pointer sampling state.
     resetKeyboardState();
     haveMousePoint_ = false;
@@ -29,7 +40,21 @@ bool InputCore::start(HWND target) noexcept {
     devices[1].dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
     devices[1].hwndTarget = target;
     registered_ = RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE)) == TRUE;
-    if (!registered_) resetKeyboardState();
+    if (!registered_) {
+        // Roll back both usages even when the combined registration call
+        // reports failure, so a partially accepted registration cannot leak
+        // beyond this failed start attempt.
+        RAWINPUTDEVICE removals[2]{};
+        removals[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        removals[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
+        removals[0].dwFlags = RIDEV_REMOVE;
+        removals[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        removals[1].usUsage = HID_USAGE_GENERIC_MOUSE;
+        removals[1].dwFlags = RIDEV_REMOVE;
+        RegisterRawInputDevices(removals,
+            static_cast<UINT>(std::size(removals)), sizeof(RAWINPUTDEVICE));
+        resetKeyboardState();
+    }
     return registered_;
 }
 void InputCore::stop() noexcept {
