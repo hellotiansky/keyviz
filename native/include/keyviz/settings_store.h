@@ -57,8 +57,15 @@ private:
     static std::wstring settingsPath() {
         wchar_t* value = nullptr;
         size_t length = 0;
-        if (_wdupenv_s(&value, &length, L"LOCALAPPDATA") != 0 || !value)
+        const errno_t status = _wdupenv_s(&value, &length, L"LOCALAPPDATA");
+        if (status != 0 || !value) {
+            std::free(value);
             return {};
+        }
+        if (value[0] == L'\\0') {
+            std::free(value);
+            return {};
+        }
         std::filesystem::path directory(value);
         std::free(value);
         directory /= L"Keyviz";
