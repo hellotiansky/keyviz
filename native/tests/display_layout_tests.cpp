@@ -6,8 +6,8 @@ using keyviz::OverlayBounds;
 using keyviz::calculateOverlayBounds;
 
 namespace {
-RECT workArea(int scale) {
-    return RECT{0, 0, 1920 * scale, 1080 * scale};
+RECT workArea(int dpi) {
+    return RECT{0, 0, MulDiv(1920, dpi, 96), MulDiv(1080, dpi, 96)};
 }
 
 void assertLogicalBounds(const OverlayBounds& bounds, int dpi) {
