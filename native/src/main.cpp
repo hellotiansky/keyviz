@@ -31,7 +31,10 @@ constexpr int kHistoryHotkeyId = 2;
 constexpr UINT_PTR kRedrawTimerId = 2;
 constexpr UINT_PTR kHistorySaveTimerId = 3;
 constexpr UINT_PTR kDisplayRebuildTimerId = 4;
+constexpr UINT_PTR kRendererRetryTimerId = 5;
 constexpr UINT kDisplayRebuildDelayMs = 300;
+constexpr UINT kDisplayRebuildRetryDelayMs = 1000;
+constexpr UINT kRendererRetryDelayMs = 1000;
 constexpr UINT kTrayCallbackMessage = WM_APP + 1;
 constexpr UINT kTraySettingsCommand = 401;
 constexpr UINT kTrayHistoryCommand = 402;
@@ -694,10 +697,9 @@ private:
         return true;
     }
 
-    void scheduleDisplayRebuild() noexcept {
+    void scheduleDisplayRebuild(UINT delayMs = kDisplayRebuildDelayMs) noexcept {
         if (inputWindow_)
-            SetTimer(inputWindow_, kDisplayRebuildTimerId,
-                kDisplayRebuildDelayMs, nullptr);
+            SetTimer(inputWindow_, kDisplayRebuildTimerId, delayMs, nullptr);
     }
 
     bool rebuildOverlays() {
@@ -778,6 +780,7 @@ private:
             KillTimer(inputWindow_, kRedrawTimerId);
             KillTimer(inputWindow_, kHistorySaveTimerId);
             KillTimer(inputWindow_, kDisplayRebuildTimerId);
+            KillTimer(inputWindow_, kRendererRetryTimerId);
             UnregisterHotKey(inputWindow_, kSettingsHotkeyId);
             UnregisterHotKey(inputWindow_, kHistoryHotkeyId);
         }
@@ -838,9 +841,17 @@ private:
         case WM_PAINT: {
             PAINTSTRUCT paint{};
             BeginPaint(hwnd, &paint);
-            if (auto* overlay = self->findOverlay(hwnd))
-                overlay->renderer.render(self->engine_.history().events(),
-                    self->engine_.filterSettings().animationDurationMs);
+            if (auto* overlay = self->findOverlay(hwnd)) {
+                if (!overlay->renderer.render(self->engine_.history().events(),
+                        self->engine_.filterSettings().animationDurationMs) &&
+                    self->inputWindow_) {
+                    // Retry a lost Direct2D target at a bounded cadence. Do
+                    // not immediately invalidate here: persistent device
+                    // failures must not create a tight WM_PAINT loop.
+                    SetTimer(self->inputWindow_, kRendererRetryTimerId,
+                        kRendererRetryDelayMs, nullptr);
+                }
+            }
             EndPaint(hwnd, &paint);
             return 0;
         }
@@ -863,7 +874,11 @@ private:
                 self->saveHistoryCheckpoint();
             } else if (isInputWindow && wParam == kDisplayRebuildTimerId) {
                 KillTimer(hwnd, kDisplayRebuildTimerId);
-                self->rebuildOverlays();
+                if (!self->rebuildOverlays())
+                    self->scheduleDisplayRebuild(kDisplayRebuildRetryDelayMs);
+            } else if (isInputWindow && wParam == kRendererRetryTimerId) {
+                KillTimer(hwnd, kRendererRetryTimerId);
+                self->invalidateOverlays();
             }
             return 0;
         case WM_DPICHANGED:
