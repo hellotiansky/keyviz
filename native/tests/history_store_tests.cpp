@@ -248,6 +248,46 @@ void truncatedPersistenceDoesNotReplaceExistingHistory() {
     std::filesystem::remove(path, error);
 }
 
+void invalidPersistenceMetadataDoesNotReplaceExistingHistory() {
+    const auto base = std::filesystem::temp_directory_path() /
+        (L"keyviz-history-invalid-" + std::to_wstring(GetCurrentProcessId()));
+    const auto oversizedCountPath = (base.wstring() + L"-count.bin");
+    const auto invalidTypePath = (base.wstring() + L"-type.bin");
+
+    {
+        std::ofstream output(oversizedCountPath, std::ios::binary | std::ios::trunc);
+        constexpr char magic[] = "KVZHIST1";
+        output.write(magic, sizeof(magic) - 1);
+        const std::uint32_t count = 321;
+        output.write(reinterpret_cast<const char*>(&count), sizeof(count));
+        assert(static_cast<bool>(output));
+    }
+    {
+        std::ofstream output(invalidTypePath, std::ios::binary | std::ios::trunc);
+        constexpr char magic[] = "KVZHIST1";
+        output.write(magic, sizeof(magic) - 1);
+        const std::uint32_t count = 1;
+        const std::uint32_t invalidType = 6;
+        output.write(magic, 0);
+        output.write(reinterpret_cast<const char*>(&count), sizeof(count));
+        output.write(reinterpret_cast<const char*>(&invalidType), sizeof(invalidType));
+        assert(static_cast<bool>(output));
+    }
+
+    HistoryStore existing(4);
+    existing.append(keyEvent('Z', 99));
+    assert(!keyviz::HistoryPersistence::load(oversizedCountPath, existing));
+    assert(existing.events().size() == 1);
+    assert(existing.events().front().virtualKey == 'Z');
+    assert(!keyviz::HistoryPersistence::load(invalidTypePath, existing));
+    assert(existing.events().size() == 1);
+    assert(existing.events().front().virtualKey == 'Z');
+
+    std::error_code error;
+    std::filesystem::remove(oversizedCountPath, error);
+    std::filesystem::remove(invalidTypePath, error);
+}
+
 void trailingPersistenceDataDoesNotReplaceExistingHistory() {
     const auto path = (std::filesystem::temp_directory_path() /
         (L"keyviz-history-trailing-" + std::to_wstring(GetCurrentProcessId()) + L".bin")).wstring();
@@ -338,6 +378,7 @@ int main() {
     clearRemovesAllEvents();
     persistenceRoundTripsEventsAndHonorsCapacity();
     truncatedPersistenceDoesNotReplaceExistingHistory();
+    invalidPersistenceMetadataDoesNotReplaceExistingHistory();
     trailingPersistenceDataDoesNotReplaceExistingHistory();
     futureWallClockTimestampRebasesWithoutArtificialAge();
     failedAtomicReplacePreservesExistingTargetAndCleansTemporaryFile();
