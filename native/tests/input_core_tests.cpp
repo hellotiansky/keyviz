@@ -100,6 +100,16 @@ void resettingKeyboardStateClearsStaleModifiers() {
     decodeOne('D', 0x20, RI_KEY_BREAK);
 }
 
+void stoppingCaptureClearsTrackedModifiers() {
+    InputCore input;
+    decodeOne(VK_CONTROL, 0x1D);
+    input.stop();
+
+    const auto key = decodeOne('E', 0x12);
+    assert(key.chordLabel.find(L"Ctrl + ") != 0);
+    decodeOne('E', 0x12, RI_KEY_BREAK);
+}
+
 void translatedLabelsDistinguishTextDeadKeysAndFallbacks() {
     const wchar_t ordinary[] = L"e";
     assert(keyviz::translatedKeyLabel(1, ordinary, 1, L"Key E") == L"e");
@@ -123,6 +133,7 @@ int main() {
     rightShiftAndRightAltAreTrackedInChords();
     releasingOneSideKeepsTheOtherModifierPressed();
     resettingKeyboardStateClearsStaleModifiers();
+    stoppingCaptureClearsTrackedModifiers();
     translatedLabelsDistinguishTextDeadKeysAndFallbacks();
     return 0;
 }
