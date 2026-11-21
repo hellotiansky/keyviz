@@ -8,6 +8,7 @@
 #include "keyviz/renderer.h"
 #include "keyviz/settings_store.h"
 #include "keyviz/history_persistence.h"
+#include "keyviz/display_layout.h"
 
 #include <algorithm>
 #include <memory>
@@ -624,18 +625,10 @@ private:
             nullptr, nullptr, instance_, this);
         if (!hwnd) return false;
 
-        const UINT dpi = std::max<UINT>(96, GetDpiForWindow(hwnd));
-        const int logicalWorkWidth = MulDiv(workWidth, 96, static_cast<int>(dpi));
-        const int logicalWorkHeight = MulDiv(workHeight, 96, static_cast<int>(dpi));
-        const int logicalWidth = std::max(1, std::min(kOverlayWidth, logicalWorkWidth - 40));
-        const int logicalHeight = std::max(1, std::min(kOverlayHeight, logicalWorkHeight - 20));
-        const int width = MulDiv(logicalWidth, static_cast<int>(dpi), 96);
-        const int height = MulDiv(logicalHeight, static_cast<int>(dpi), 96);
-        const int margin = MulDiv(kOverlayBottomMargin, static_cast<int>(dpi), 96);
-        const int x = work.left + (workWidth - width) / 2;
-        const int y = work.bottom - height - margin;
-        if (!SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height,
-                SWP_NOACTIVATE)) {
+        const UINT dpi = GetDpiForWindow(hwnd);
+        const OverlayBounds bounds = calculateOverlayBounds(work, dpi);
+        if (!SetWindowPos(hwnd, HWND_TOPMOST, bounds.x, bounds.y,
+                bounds.width, bounds.height, SWP_NOACTIVATE)) {
             DestroyWindow(hwnd);
             return false;
         }
