@@ -11,6 +11,12 @@ bool InputCore::haveMousePoint_ = false;
 DWORD InputCore::lastMouseMoveTick_ = 0;
 std::array<bool, 256> InputCore::pressedKeys_{};
 bool InputCore::start(HWND target) noexcept {
+    // A new capture session must never inherit key or pointer sampling state.
+    resetKeyboardState();
+    haveMousePoint_ = false;
+    lastMousePoint_ = {};
+    lastMouseMoveTick_ = 0;
+
     RAWINPUTDEVICE devices[2]{};
     devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
     devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD;
@@ -21,16 +27,21 @@ bool InputCore::start(HWND target) noexcept {
     devices[1].dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
     devices[1].hwndTarget = target;
     registered_ = RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE)) == TRUE;
-    if (registered_) { haveMousePoint_ = false; lastMouseMoveTick_ = 0; pressedKeys_.fill(false); }
+    if (!registered_) resetKeyboardState();
     return registered_;
 }
 void InputCore::stop() noexcept {
-    if (!registered_) return;
-    RAWINPUTDEVICE devices[2]{};
-    devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC; devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD; devices[0].dwFlags = RIDEV_REMOVE;
-    devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC; devices[1].usUsage = HID_USAGE_GENERIC_MOUSE; devices[1].dwFlags = RIDEV_REMOVE;
-    RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE));
-    registered_ = false; pressedKeys_.fill(false);
+    if (registered_) {
+        RAWINPUTDEVICE devices[2]{};
+        devices[0].usUsagePage = HID_USAGE_PAGE_GENERIC_KEYBOARD; devices[0].usUsage = HID_USAGE_GENERIC_KEYBOARD; devices[0].dwFlags = RIDEV_REMOVE;
+        devices[1].usUsagePage = HID_USAGE_PAGE_GENERIC_MOUSE; devices[1].usUsage = HID_USAGE_GENERIC_MOUSE; devices[1].dwFlags = RIDEV_REMOVE;
+        RegisterRawInputDevices(devices, static_cast<UINT>(std::size(devices)), sizeof(RAWINPUTDEVICE));
+    }
+    registered_ = false;
+    resetKeyboardState();
+    haveMousePoint_ = false;
+    lastMousePoint_ = {};
+    lastMouseMoveTick_ = 0;
 }
 void InputCore::resetKeyboardState() noexcept {
     pressedKeys_.fill(false);
