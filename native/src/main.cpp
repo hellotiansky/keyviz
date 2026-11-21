@@ -56,7 +56,7 @@ public:
         hwnd_ = CreateWindowExW(WS_EX_APPWINDOW, kSettingsClass,
             L"Keyviz Native - Settings",
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-            CW_USEDEFAULT, CW_USEDEFAULT, 460, 330,
+            CW_USEDEFAULT, CW_USEDEFAULT, 460, 370,
             nullptr, nullptr, instance, this);
         return hwnd_ != nullptr;
     }
@@ -70,7 +70,7 @@ private:
         kKeyboardFilterId = 201, kMouseButtonsFilterId = 202,
         kWheelFilterId = 203, kMouseMoveFilterId = 204,
         kApplyId = 205, kHideId = 206, kClearHistoryId = 207,
-        kHistoryCapacityId = 208
+        kHistoryCapacityId = 208, kAnimationDurationId = 209
     };
 
     static void createCheckBox(HWND hwnd, HINSTANCE instance,
@@ -125,16 +125,32 @@ private:
                 self->settings_.historyCapacity == 160 ? 2 :
                 self->settings_.historyCapacity == 320 ? 3 : 1;
             SendMessageW(capacity, CB_SETCURSEL, selectedCapacity, 0);
+            CreateWindowExW(0, L"STATIC", L"Overlay fade duration:",
+                WS_CHILD | WS_VISIBLE, 22, 218, 220, 22,
+                hwnd, nullptr, instance, nullptr);
+            HWND animation = CreateWindowExW(0, L"COMBOBOX", nullptr,
+                WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST,
+                250, 214, 150, 120, hwnd,
+                reinterpret_cast<HMENU>(static_cast<INT_PTR>(kAnimationDurationId)),
+                instance, nullptr);
+            const wchar_t* durations[] = {L"0.4 seconds", L"0.8 seconds",
+                L"1.1 seconds", L"1.6 seconds"};
+            for (const auto* option : durations)
+                SendMessageW(animation, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(option));
+            const int selectedDuration = self->settings_.animationDurationMs == 400 ? 0 :
+                self->settings_.animationDurationMs == 800 ? 1 :
+                self->settings_.animationDurationMs == 1600 ? 3 : 2;
+            SendMessageW(animation, CB_SETCURSEL, selectedDuration, 0);
             CreateWindowExW(0, L"BUTTON", L"Apply",
-                WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 22, 230, 100, 30,
+                WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 22, 270, 100, 30,
                 hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kApplyId)),
                 instance, nullptr);
             CreateWindowExW(0, L"BUTTON", L"Hide",
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 134, 230, 100, 30,
+                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 134, 270, 100, 30,
                 hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kHideId)),
                 instance, nullptr);
             CreateWindowExW(0, L"BUTTON", L"Clear history",
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 246, 230, 130, 30,
+                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 246, 270, 130, 30,
                 hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(kClearHistoryId)),
                 instance, nullptr);
             return 0;
@@ -151,6 +167,11 @@ private:
                 constexpr std::size_t capacities[] = {40, 80, 160, 320};
                 if (capacity >= 0 && capacity < 4)
                     next.historyCapacity = capacities[capacity];
+                const LRESULT animation = SendDlgItemMessageW(hwnd, kAnimationDurationId,
+                    CB_GETCURSEL, 0, 0);
+                constexpr DWORD durations[] = {400, 800, 1100, 1600};
+                if (animation >= 0 && animation < 4)
+                    next.animationDurationMs = durations[animation];
                 if (self->onApply_) self->onApply_(next);
                 self->settings_ = next;
                 return 0;
@@ -707,7 +728,8 @@ private:
             PAINTSTRUCT paint{};
             BeginPaint(hwnd, &paint);
             if (auto* overlay = self->findOverlay(hwnd))
-                overlay->renderer.render(self->engine_.history().events());
+                overlay->renderer.render(self->engine_.history().events(),
+                    self->engine_.filterSettings().animationDurationMs);
             EndPaint(hwnd, &paint);
             return 0;
         }
@@ -721,7 +743,8 @@ private:
             if (isInputWindow && wParam == kRedrawTimerId) {
                 const auto& events = self->engine_.history().events();
                 if (events.empty() ||
-                    GetTickCount() - events.front().timestamp > 1150) {
+                    GetTickCount() - events.front().timestamp >
+                        self->engine_.filterSettings().animationDurationMs + 50) {
                     KillTimer(hwnd, kRedrawTimerId);
                 }
                 self->invalidateOverlays();
