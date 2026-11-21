@@ -57,11 +57,29 @@ void altGrTracksRightAltAndControlTogether() {
     decodeOne(VK_MENU, 0x38, RI_KEY_BREAK | RI_KEY_E0);
     decodeOne(VK_CONTROL, 0x1D, RI_KEY_BREAK);
 }
+
+void rightShiftAndRightAltAreTrackedInChords() {
+    const auto rightShift = decodeOne(VK_SHIFT, 0x36);
+    assert(rightShift.virtualKey == VK_RSHIFT);
+    assert(rightShift.label == L"Right Shift");
+
+    const auto rightAlt = decodeOne(VK_MENU, 0x38, RI_KEY_E0);
+    assert(rightAlt.virtualKey == VK_RMENU);
+    assert(rightAlt.label == L"Right Alt");
+
+    const auto key = decodeOne('A', 0x1E);
+    assert(key.chordLabel.find(L"Shift + Alt + ") == 0);
+
+    decodeOne('A', 0x1E, RI_KEY_BREAK);
+    decodeOne(VK_MENU, 0x38, RI_KEY_BREAK | RI_KEY_E0);
+    decodeOne(VK_SHIFT, 0x36, RI_KEY_BREAK);
+}
 } // namespace
 
 int main() {
     leftAndRightControlAreDistinguished();
     chordUsesTrackedModifiers();
     altGrTracksRightAltAndControlTogether();
+    rightShiftAndRightAltAreTrackedInChords();
     return 0;
 }
